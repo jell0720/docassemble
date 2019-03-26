@@ -19,26 +19,21 @@ yesno: user_is_well
 question: Is the sky blue?
 yesno: sky_is_blue
 ---
+question: |
+  Why is the sky blue?
+fields:
+  - Reason: reason_why_sky_is_blue
+---
 question: Done with the interview.
 subquestion: |
   % if user_is_well:
   I am glad you are doing well.
-    % if sky_is_blue:
+    % if sky_is_blue and reason_why_sky_is_blue:
   Enjoy the sunshine!  
     % endif
   % else:
   I am sorry to hear that you are
   not well!
-    % if sky_is_blue:
-  At least the sky is blue.
-    % endif
-  % endif
-subquestion: |
-  % if user_is_well:
-    % if sky_is_blue:
-  Enjoy the sunshine!  
-    % endif
-  % else:
     % if sky_is_blue:
   At least the sky is blue.
     % endif

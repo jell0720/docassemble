@@ -9,8 +9,6 @@
     <meta name="google-signin-client_id" content="{{ config['OAUTH_CREDENTIALS']['google']['id'] }}">
 {%- endif %}{{ extra_meta }}
     <title>{% if tab_title %}{{ tab_title }}{% else %}{{ config['APP_NAME'] }}{% endif %}</title>
-    <link href="{% if config['BOOTSTRAP_THEME'] %}{{ config['BOOTSTRAP_THEME'] }}{% else %}{{ url_for('static', filename='bootstrap/css/bootstrap.min.css') }}{% endif %}" rel="stylesheet">
-    <link href="{{ url_for('static', filename='app/app.css') }}" rel="stylesheet">{{ extra_css }}{{ config['GLOBAL_CSS']|safe }}
     <link rel="shortcut icon" href="{{ url_for('favicon') }}">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('apple_touch_icon') }}">
     <link rel="icon" type="image/png" href="{{ url_for('favicon_md') }}" sizes="32x32">
@@ -18,7 +16,9 @@
     <link rel="manifest" href="{{ url_for('favicon_manifest_json') }}">
     <link rel="mask-icon" href="{{ url_for('favicon_safari_pinned_tab') }}" color="{{ config['FAVICON_MASK_COLOR'] }}">
     <meta name="theme-color" content="{{ config['FAVICON_THEME_COLOR'] }}">
-    <script defer src="{{ url_for('static', filename='fontawesome/js/fontawesome-all.min.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='fontawesome/js/all.js') }}"></script>
+    <link href="{% if config['BOOTSTRAP_THEME'] %}{{ config['BOOTSTRAP_THEME'] }}{% else %}{{ url_for('static', filename='bootstrap/css/bootstrap.min.css') }}{% endif %}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='app/app.css') }}" rel="stylesheet">{{ extra_css }}{{ config['GLOBAL_CSS']|safe }}
   </head>
   <body class="{% if bodyclass %}{{ bodyclass }}{% else %}dabody{% endif %} pad-for-navbar">
     <nav class="navbar fixed-top navbar-expand-md navbar-dark bg-dark">
@@ -65,8 +65,12 @@
                 <a class="dropdown-item" href="{{ url_for('user.logout') }}">{{ word('Sign Out') }}</a>
               </div>
             </li>
-            {%- elif request.path != "/login" and request.path != "/user/sign-in" and request.url_rule != None %}
+            {%- elif request.path != "/login" and request.path != "/user/sign-in" and request.path != "/mfa_login" and request.url_rule != None %}
+              {%- if request.path == "/user/forgot-password" or request.path == "/user/register" or request.path == "/user/change-password" or request.path == "/phone_login" or request.path == "/user/google-sign-in" %}
+            <li><a class="nav-link" href="{{ url_for('user.login') }}">{{ word('Sign in') }}</a></li>
+              {%- else %}
             <li><a class="nav-link" href="{{ url_for('user.login', next=url_for(request.url_rule.endpoint)) }}">{{ word('Sign in') }}</a></li>
+              {%- endif %}
             {%- endif %}
           </ul>
         </div>
@@ -96,11 +100,11 @@
     <script src="{{ url_for('static', filename='popper/umd/tooltip.min.js') }}"></script>
     <script src="{{ url_for('static', filename='bootstrap/js/bootstrap.min.js') }}"></script>
     <script>
-      var whichButton = null;
+      var daWhichButton = null;
       $( document ).ready(function(){
         {%- if request.path in ["/user/sign-in", "/user/register", "/user/forgot-password"] %}
         $("#email").focus();
-        {%- else %}
+        {%- elif request.path != "/playgroundfiles" %}
         $(".form").find('input[type=text],textarea,select').filter(':visible:first').focus();
         {%- endif %}
         setTimeout(function () {
@@ -112,7 +116,7 @@
           });
         }, 3000);
         $(".btn-da").click(function(){
-          whichButton = this;
+          daWhichButton = this;
         });
         $(".form").on('submit', function(){
           $(this).find(".btn-da").each(function(){
@@ -124,13 +128,13 @@
             setTimeout(function(){
               $(the_button).prop("disabled", true);
             }, 1);
-            if (this != whichButton){
+            if (this != daWhichButton){
               $(this).removeClass("btn-primary btn-info btn-warning btn-error btn-success");
               $(this).addClass("btn-secondary");
             }
             else{
-              $(whichButton).removeClass("btn-primary btn-info btn-warning btn-error btn-secondary");
-              $(whichButton).addClass("btn-success");
+              $(daWhichButton).removeClass("btn-primary btn-info btn-warning btn-error btn-secondary");
+              $(daWhichButton).addClass("btn-success");
             }
           });
         });

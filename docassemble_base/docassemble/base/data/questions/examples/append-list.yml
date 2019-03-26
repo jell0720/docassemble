@@ -1,11 +1,9 @@
 metadata:
   title: Adding object to list
   short title: Append
-  example start: 2
-  example end: 8
----
-modules:
-  - docassemble.base.util
+  documentation: "https://docassemble.org/docs/objects.html#DAList.append"
+  example start: 1
+  example end: 7
 ---
 objects:
   - person: DAList.using(object_type=Individual, there_are_any=True)
@@ -54,4 +52,3 @@ subquestion: |
   % for y in person:
   * ${ y } is ${ y.age } years old.
   % endfor
-    

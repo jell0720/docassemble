@@ -1,3 +1,4 @@
+from six import string_types, text_type, PY2
 import sys
 import docassemble.base.config
 docassemble.base.config.load(arguments=sys.argv)
@@ -18,33 +19,55 @@ import redis
 import json
 import datetime
 import pytz
-import cPickle as pickle
+if PY2:
+    import cPickle as pickle
+else:
+    import pickle
 import re
 import time
 import random
-from docassemble.webapp.backend import initial_dict, can_access_file_number, get_info_from_file_number, get_info_from_file_reference, get_new_file_number, nice_utc_date, nice_date_from_utc, fetch_user_dict, get_chat_log, encrypt_phrase, pack_phrase
+from docassemble.webapp.backend import initial_dict, can_access_file_number, get_info_from_file_number, get_info_from_file_reference, get_new_file_number, nice_utc_date, nice_date_from_utc, fetch_user_dict, get_chat_log, encrypt_phrase, pack_phrase, fix_pickle_obj
 from docassemble.webapp.users.models import UserModel, ChatLog
 from docassemble.base.functions import get_default_timezone, word
 from flask import session, request
 from flask_kvsession import KVSessionExtension
 
-#redis_host = daconfig.get('redis', None)
-#if redis_host is None:
-#    redis_host = 'redis://localhost'
-#docassemble.base.util.set_redis_server(redis_host)
 import docassemble.webapp.daredis
-
-from docassemble.webapp.daredis import redis_host
+from docassemble.webapp.daredis import redis_host, redis_port, redis_offset
 
 store = RedisStore(docassemble.webapp.daredis.r_store)
 kv_session = KVSessionExtension(store, app)
 
 from docassemble.webapp.daredis import r as rr
 
-#rr = redis.StrictRedis(host=docassemble.base.util.redis_server, db=0)
-
 threads = dict()
 secrets = dict()
+
+def obtain_lock(user_code, filename):
+    key = 'da:lock:' + user_code + ':' + filename
+    found = False
+    count = 4
+    while count > 0:
+        record = rr.get(key)
+        if record:
+            sys.stderr.write("obtain_lock: waiting for " + key + "\n")
+            time.sleep(1.0)
+        else:
+            found = False
+            break
+        found = True
+        count -= 1
+    if found:
+        sys.stderr.write("Request for " + key + " deadlocked\n")
+        release_lock(user_code, filename)
+    pipe = rr.pipeline()
+    pipe.set(key, 1)
+    pipe.expire(key, 4)
+    pipe.execute()
+    
+def release_lock(user_code, filename):
+    key = 'da:lock:' + user_code + ':' + filename
+    rr.delete(key)
 
 def background_thread(sid=None, user_id=None, temp_user_id=None):
     if user_id is not None:
@@ -63,20 +86,21 @@ def background_thread(sid=None, user_id=None, temp_user_id=None):
             the_timezone = pytz.timezone(person.timezone)
         else:
             the_timezone = pytz.timezone(get_default_timezone())
-        r = redis.StrictRedis(host=redis_host, db=0)
+        r = redis.StrictRedis(host=redis_host, port=redis_port, db=redis_offset)
 
         partners = set()
         pubsub = r.pubsub()
         pubsub.subscribe([sid])
         for item in pubsub.listen():
+            sys.stderr.write("0\n" + repr(item) + "\n")
             if item['type'] != 'message':
                 continue
             #sys.stderr.write("sid: " + str(sid) + ":\n")
             data = None
             try:
-                data = json.loads(item['data'])
+                data = json.loads(item['data'].decode())
             except:
-                sys.stderr.write("  JSON parse error: " + str(item['data']) + "\n")
+                sys.stderr.write("  JSON parse error: " + str(item['data'].decode()) + "\n")
                 continue
             if data.get('message', None) == "KILL" and (('sid' in data and data['sid'] == sid) or 'sid' not in data):
                 pubsub.unsubscribe(sid)
@@ -302,9 +326,11 @@ def interview_connect():
                 return
             rr.delete(lkey)
             for pkey in partner_keys:
+                pkey = pkey.decode()
                 #sys.stderr.write("Considering: " + pkey + "\n")
                 partner_sid = rr.get(pkey)
                 if partner_sid is not None:
+                    partner_sid = partner_sid.decode()
                     if re.match(r'^da:monitor:available:.*', pkey):
                         is_help = True
                     else:
@@ -352,11 +378,14 @@ def get_dict():
     if session_id is None or yaml_filename is None:
         sys.stderr.write('Attempt to get dictionary where session not defined\n')
         return None
+    #obtain_lock(session_id, yaml_filename)
     try:
         steps, user_dict, is_encrypted = fetch_user_dict(session_id, yaml_filename, secret=secret)
     except Exception as err:
-        sys.stderr.write('get_dict: attempt to get dictionary failed: ' + unicode(err) + '\n')
+        #release_lock(session_id, yaml_filename)
+        sys.stderr.write('get_dict: attempt to get dictionary failed: ' + text_type(err) + '\n')
         return None
+    #release_lock(session_id, yaml_filename)
     return user_dict
 
 def get_dict_encrypt():
@@ -368,11 +397,14 @@ def get_dict_encrypt():
     if session_id is None or yaml_filename is None:
         sys.stderr.write('Attempt to get dictionary where session not defined\n')
         return None, None
+    #obtain_lock(session_id, yaml_filename)
     try:
         steps, user_dict, is_encrypted = fetch_user_dict(session_id, yaml_filename, secret=secret)
     except Exception as err:
-        sys.stderr.write('get_dict_encrypt: attempt to get dictionary failed: ' + unicode(err) + '\n')
+        #release_lock(session_id, yaml_filename)
+        sys.stderr.write('get_dict_encrypt: attempt to get dictionary failed: ' + text_type(err) + '\n')
         return None, None
+    #release_lock(session_id, yaml_filename)
     return user_dict, is_encrypted
 
 #monitor
@@ -388,32 +420,33 @@ def monitor_thread(sid=None, user_id=None):
             the_timezone = pytz.timezone(person.timezone)
         else:
             the_timezone = pytz.timezone(get_default_timezone())
-        r = redis.StrictRedis(host=redis_host, db=0)
+        r = redis.StrictRedis(host=redis_host, port=redis_port, db=redis_offset)
         listening_sids = set()
         pubsub = r.pubsub()
         pubsub.subscribe(['da:monitor', sid])
         for item in pubsub.listen():
+            sys.stderr.write("1\n" + repr(item) + "\n")
             if item['type'] != 'message':
                 continue
             #sys.stderr.write("monitor sid: " + str(sid) + ":\n")
             data = None
             try:
-                data = json.loads(item['data'])
+                data = json.loads(item['data'].decode())
             except:
-                sys.stderr.write("  monitor JSON parse error: " + str(item['data']) + "\n")
+                sys.stderr.write("  monitor JSON parse error: " + item['data'].decode() + "\n")
                 continue
             if 'message' in data and data['message'] == "KILL":
-                if item['channel'] == str(sid):
+                if item['channel'].decode() == str(sid):
                     sys.stderr.write("  monitor unsubscribed from all\n")
                     pubsub.unsubscribe()
                     for interview_sid in listening_sids:
                         r.publish(interview_sid, json.dumps(dict(messagetype='departure', sid=sid)))
                     break
-                elif item['channel'] != 'da:monitor':
-                    pubsub.unsubscribe(item['channel'])
+                elif item['channel'].decode() != 'da:monitor':
+                    pubsub.unsubscribe(item['channel'].decode())
                     if data['sid'] in listening_sids:
                         listening_sids.remove(data['sid'])
-                    sys.stderr.write("  monitor unsubscribed from " + str(item['channel']) + "\n")
+                    sys.stderr.write("  monitor unsubscribed from " + item['channel'].decode() + "\n")
                 continue
             else:
                 sys.stderr.write("  Got something for monitor\n")
@@ -440,10 +473,10 @@ def monitor_thread(sid=None, user_id=None):
                         sys.stderr.write("chatready 1")
                         socketio.emit('chatready', {'uid': data['uid'], 'i': data['i'], 'userid': data['userid'], 'name': name}, namespace='/monitor', room=sid)
                     if data['messagetype'] == 'block':
-                        pubsub.unsubscribe(item['channel'])
-                        if item['channel'] in listening_sids:
-                            listening_sids.remove(item['channel'])
-                        sys.stderr.write("  monitor unsubscribed from " + str(item['channel']) + "\n")
+                        pubsub.unsubscribe(item['channel'].decode())
+                        if item['channel'].decode() in listening_sids:
+                            listening_sids.remove(item['channel'].decode())
+                        sys.stderr.write("  monitor unsubscribed from " + item['channel'].decode() + "\n")
                     if data['messagetype'] == 'refreshsessions':
                         socketio.emit('refreshsessions', {}, namespace='/monitor', room=sid)
                     if data['messagetype'] == 'chat':
@@ -486,11 +519,14 @@ def on_monitor_disconnect():
     rr.delete('da:monitor:' + str(request.sid))
     rr.expire('da:monitor:available:' + str(user_id), 5)
     for key in rr.keys('da:monitor:role:*:userid:' + str(user_id)):
+        key = key.decode()
         rr.expire(key, 5)
     for key in rr.keys('da:phonecode:monitor:' + str(user_id) + ':uid:*'):
+        key = key.decode()
         the_code = rr.get(key)
         if the_code is not None:
-            rr.expire('da:callforward:' + str(the_code), 5)
+            the_code = the_code.decode()
+            rr.expire('da:callforward:' + the_code, 5)
         rr.expire(key, 5)
     rr.expire('da:monitor:chatpartners:' + str(user_id), 5)
     rr.publish(request.sid, json.dumps(dict(message='KILL', sid=request.sid)))
@@ -516,6 +552,7 @@ def monitor_block(data):
     rr.set(re.sub(r'^da:session:', 'da:block:', key), 1)
     sid = rr.get(re.sub(r'^da:session:', 'da:interviewsession:', key))
     if sid is not None:
+        sid = sid.decode()
         rr.publish(sid, json.dumps(dict(messagetype='block', sid=request.sid)))
         sys.stderr.write("Blocking\n")
     else:
@@ -535,9 +572,16 @@ def monitor_unblock(data):
     rr.delete(re.sub(r'^da:session:', 'da:block:', key))
     sid = rr.get(re.sub(r'^da:session:', 'da:interviewsession:', key))
     if sid is not None:
+        sid = sid.decode()
         rr.publish(sid, json.dumps(dict(messagetype='chatpartner', sid=request.sid)))
     socketio.emit('unblock', {'key': key}, namespace='/monitor', room=request.sid)
-    
+
+def decode_dict(the_dict):
+    out_dict = dict()
+    for k, v in the_dict.items():
+        out_dict[k.decode()] = v.decode()
+    return out_dict
+
 @socketio.on('updatemonitor', namespace='/monitor')
 def update_monitor(message):
     if 'monitor' not in session:
@@ -562,20 +606,25 @@ def update_monitor(message):
     for key in term_phone_partners:
         the_code = rr.get(key)
         if the_code is not None:
+            the_code = the_code.decode()
             rr.delete(re.sub(r'da:session:uid:', prefix, key))
-            rr.delete('da:callforward:' + str(the_code))
+            rr.delete('da:callforward:' + the_code)
     if phone_number is None or phone_number == '':
         for key in rr.keys(prefix + '*'):
+            key = key.decode()
             the_code = rr.get(key)
             if the_code is not None:
+                the_code = the_code.decode()
                 rr.delete(key)
-                rr.delete('da:callforward:' + str(the_code))
+                rr.delete('da:callforward:' + the_code)
     else:
         codes_in_use = set()
         for key in rr.keys('da:callforward:*'):
+            key = key.decode()
             code = re.sub(r'^da:callforward:', '', key)
             codes_in_use.add(code)
         for key in rr.keys(prefix + '*'):
+            key = key.decode()
             phone_partners[re.sub(r'^da:phonecode:monitor:[0-9]*:uid:', 'da:session:uid:', key)] = 1
         for key in new_phone_partners:
             if key in phone_partners:
@@ -611,6 +660,7 @@ def update_monitor(message):
     key_exists = rr.exists(key)
     chat_partners = dict()
     for cp_key in rr.hgetall('da:monitor:chatpartners:' + str(session['user_id'])):
+        cp_key = cp_key.decode()
         if rr.get(cp_key) is None:
             rr.hdel('da:monitor:chatpartners:' + str(session['user_id']), cp_key)
         else:
@@ -626,31 +676,31 @@ def update_monitor(message):
         pipe = rr.pipeline()
         pipe.delete(key)
         for avail_key in rr.keys('da:monitor:role:*:userid:' + str(session['user_id'])):
-            pipe.delete(avail_key)
+            pipe.delete(avail_key.decode())
         pipe.execute()
     avail_roles = list()
     for key in rr.keys('da:chat:roletype:*'):
-        avail_roles.append(re.sub(r'^da:chat:roletype:', r'', key))
+        avail_roles.append(re.sub(r'^da:chat:roletype:', r'', key.decode()))
     sub_role_key = 'da:monitor:userrole:' + str(session['user_id'])
     if rr.exists(sub_role_key):
-        subscribed_roles = rr.hgetall(sub_role_key)
+        subscribed_roles = decode_dict(rr.hgetall(sub_role_key))
     else:
         subscribed_roles = dict()
     del_mon_role_keys = list()
-    for role_key in new_subscribed_roles.keys():
+    for role_key in [k for k in new_subscribed_roles.keys()]:
         if role_key not in avail_roles:
             #sys.stderr.write("role_key is " + str(role_key) + " which is " + str(type(role_key)) + "\n")
             del new_subscribed_roles[role_key]
-    for role_key in subscribed_roles.keys():
+    for role_key in [k for k in subscribed_roles.keys()]:
         if role_key not in avail_roles:
             rr.hdel(sub_role_key, role_key)
             del_mon_role_keys.append('da:monitor:role:' + role_key + ':userid:' + str(session['user_id']))
 
-    for role_key in new_subscribed_roles.keys():
+    for role_key in [k for k in new_subscribed_roles.keys()]:
         if role_key not in subscribed_roles:
             rr.hset(sub_role_key, role_key, 1)
             subscribed_roles[role_key] = 1
-    for role_key in subscribed_roles.keys():
+    for role_key in [k for k in subscribed_roles.keys()]:
         if role_key not in new_subscribed_roles:
             rr.hdel(sub_role_key, role_key)
             del_mon_role_keys.append('da:monitor:role:' + role_key + ':userid:' + str(session['user_id']))
@@ -664,24 +714,25 @@ def update_monitor(message):
 
     if available_for_chat and len(subscribed_roles):
         pipe = rr.pipeline()
-        for role_key in subscribed_roles.keys():
+        for role_key in [k for k in subscribed_roles.keys()]:
             key = 'da:monitor:role:' + role_key + ':userid:' + str(session['user_id'])
             pipe.set(key, 1)
             pipe.expire(key, 60)
         pipe.execute()
     keylist = list()
     for key in rr.keys('da:session:*'):
-        keylist.append(key)
+        keylist.append(key.decode())
     sessions = dict()
     for key in keylist:
         try:
-            sessobj = pickle.loads(rr.get(key))
+            sessobj = fix_pickle_obj(rr.get(key))
         except:
-            sys.stderr.write('error parsing value of ' + str(key) + " which was " + str(rr.get(key)) + "\n")
+            sys.stderr.write('error parsing value of ' + str(key) + " which was " + repr(rr.get(key)) + "\n")
             continue
         if sessobj.get('chatstatus', None) != 'off':
             html = rr.get(re.sub(r'^da:session:', 'da:html:', key))
             if html is not None:
+                html = html.decode()
                 obj = json.loads(html)
                 sessobj['browser_title'] = obj.get('browser_title', 'not available')
                 if rr.exists(re.sub(r'^da:session:', 'da:block:', key)):
@@ -713,14 +764,18 @@ def monitor_chat_message(data):
     if sid is None:
         sys.stderr.write("No sid for monitor chat message with key " + str(key) + "\n")
         return
+    sid = sid.decode()
     secret = secrets.get(sid, None)
     if secret is not None:
         secret = str(secret)
+    #obtain_lock(session_id, yaml_filename)
     try:
         steps, user_dict, encrypted = fetch_user_dict(session_id, yaml_filename, secret=secret)
     except Exception as err:
-        sys.stderr.write("monitor_chat_message: could not get dictionary: " + unicode(err) + "\n")
+        #release_lock(session_id, yaml_filename)
+        sys.stderr.write("monitor_chat_message: could not get dictionary: " + text_type(err) + "\n")
         return
+    #release_lock(session_id, yaml_filename)
     nowtime = datetime.datetime.utcnow()
     if encrypted:
         message = encrypt_phrase(data['data'], secret)
@@ -771,14 +826,18 @@ def monitor_chat_log(data):
     if sid is None:
         sys.stderr.write("No sid for monitor chat message with key " + str(key) + "\n")
         return
+    sid = sid.decode()
     secret = secrets.get(sid, None)
     if secret is not None:
         secret = str(secret)
+    #obtain_lock(session_id, yaml_filename)
     try:
         steps, user_dict, encrypted = fetch_user_dict(session_id, yaml_filename, secret=secret)
     except Exception as err:
-        sys.stderr.write("monitor_chat_log: could not get dictionary: " + unicode(err) + "\n")
+        #release_lock(session_id, yaml_filename)
+        sys.stderr.write("monitor_chat_log: could not get dictionary: " + text_type(err) + "\n")
         return
+    #release_lock(session_id, yaml_filename)
     chat_mode = user_dict['_internal']['livehelp']['mode']
     m = re.match('t([0-9]+)', chat_user_id)
     if m:
@@ -803,18 +862,19 @@ def monitor_chat_log(data):
 def observer_thread(sid=None, key=None):
     with app.app_context():
         sys.stderr.write("Started observer thread for " + str(sid) + "\n")
-        r = redis.StrictRedis(host=redis_host, db=0)
+        r = redis.StrictRedis(host=redis_host, port=redis_port, db=redis_offset)
         pubsub = r.pubsub()
         pubsub.subscribe([key, sid])
         for item in pubsub.listen():
+            sys.stderr.write("2\n" + repr(item) + "\n")
             if item['type'] != 'message':
                 continue
             #sys.stderr.write("observer sid: " + str(sid) + ":\n")
             data = None
             try:
-                data = json.loads(item['data'])
+                data = json.loads(item['data'].decode())
             except:
-                sys.stderr.write("  observer JSON parse error: " + str(item['data']) + "\n")
+                sys.stderr.write("  observer JSON parse error: " + item['data'].decode() + "\n")
                 continue
             if 'message' in data and data['message'] == "KILL" and (('sid' in data and data['sid'] == sid) or 'sid' not in data):
                 pubsub.unsubscribe()
@@ -824,7 +884,7 @@ def observer_thread(sid=None, key=None):
                 if data['message'] == "newpage":
                     #sys.stderr.write("  Got new page for observer\n")
                     try:
-                        obj = json.loads(r.get(data['key']))
+                        obj = json.loads(r.get(data['key']).decode())
                     except:
                         sys.stderr.write("  newpage JSON parse error\n")
                         continue
@@ -833,7 +893,7 @@ def observer_thread(sid=None, key=None):
                     #sys.stderr.write("  got start_being_controlled message with key " + str(data['key']) + "\n")
                     socketio.emit('start_being_controlled', {'key': data['key']}, namespace='/observer', room=sid)
             else:
-                #sys.stderr.write("  Got something for observer\n")
+                #sys.stderr.write("  Got parameters for observer\n")
                 socketio.emit('pushchanges', {'parameters': data}, namespace='/observer', room=sid)
         sys.stderr.write('  exiting observer thread for sid ' + str(sid) + '\n')
 
@@ -862,7 +922,7 @@ def start_control(message):
     self_key = 'da:control:sid:' + str(request.sid)
     key = 'da:control:uid:' + str(message['uid']) + ':i:' + str(message['i']) + ':userid:' + str(message['userid'])
     existing_sid = rr.get(key)
-    if existing_sid is None or existing_sid == request.sid:
+    if existing_sid is None or existing_sid.decode() == request.sid:
         #sys.stderr.write('Controlling ' + key + '\n')
         pipe = rr.pipeline()
         pipe.set(self_key, key)
@@ -873,6 +933,7 @@ def start_control(message):
         int_key = 'da:interviewsession:uid:' + str(message['uid']) + ':i:' + str(message['i']) + ':userid:' + str(message['userid'])
         int_sid = rr.get(int_key)
         if int_sid is not None:
+            int_sid = int_sid.decode()
             rr.publish(int_sid, json.dumps(dict(messagetype='controllerstart')))
     else:
         sys.stderr.write('That key ' + key + ' is already taken\n')
@@ -891,11 +952,12 @@ def stop_control(message):
     existing_sid = rr.get(key)
     pipe = rr.pipeline()
     pipe.delete(self_key)
-    if existing_sid is not None and existing_sid == request.sid:
+    if existing_sid is not None and existing_sid.decode() == request.sid:
         pipe.delete(key)
         pipe.execute()
         sid = rr.get('da:interviewsession:uid:' + str(message['uid']) + ':i:' + str(message['i']) + ':userid:' + str(message['userid']))
         if sid is not None:
+            sid = sid.decode()
             sys.stderr.write("Calling controllerexit 1");
             rr.publish(sid, json.dumps(dict(messagetype='controllerexit', sid=request.sid)))
     else:
@@ -917,6 +979,7 @@ def observer_changes(message):
         else:
             socketio.emit('noconnection', {'key': key}, namespace='/observer', room=request.sid)
     else:
+        sid = sid.decode()
         sys.stderr.write('observerChanges: sid exists at ' + time.strftime("%Y-%m-%d %H:%M:%S") + '\n')
         rr.publish(sid, json.dumps(dict(messagetype='controllerchanges', sid=request.sid, clicked=message.get('clicked', None), parameters=message['parameters'])))
         # sid=request.sid, yaml_filename=str(message['i']), uid=str(message['uid']), user_id=str(message['userid'])
@@ -936,12 +999,14 @@ def on_observer_disconnect():
     self_key = 'da:control:sid:' + str(request.sid)
     int_key = rr.get(self_key)
     if int_key is not None:
+        int_key = int_key.decode()
         rr.delete(int_key)
         other_sid = rr.get(re.sub(r'^da:control:uid:', 'da:interviewsession:uid:', int_key))
     else:
         other_sid = None
     rr.delete(self_key)
     if other_sid is not None:
+        other_sid = other_sid.decode()
         sys.stderr.write("Calling controllerexit 2");
         rr.publish(other_sid, json.dumps(dict(messagetype='controllerexit', sid=request.sid)))
     rr.publish(request.sid, json.dumps(dict(message='KILL', sid=request.sid)))

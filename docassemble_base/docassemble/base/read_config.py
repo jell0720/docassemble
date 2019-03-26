@@ -1,6 +1,7 @@
 import sys
 import os
 import re
+from six import string_types, text_type, PY2
 separator = re.compile(r' *[,;] *')
 
 if __name__ == "__main__":
@@ -11,6 +12,10 @@ if __name__ == "__main__":
         print('export TIMEZONE="' + str(daconfig['timezone']) + '"')
     if 'os locale' in daconfig and daconfig['os locale'] is not None:
         print('export LOCALE="' + str(daconfig['os locale']) + '"')
+    if PY2:
+        print('export DAPYTHONVERSION="2"')
+    else:
+        print('export DAPYTHONVERSION="3"')
     if 'other os locales' in daconfig and type(daconfig['other os locales']) is list:
         print('declare -a OTHERLOCALES')
         print('export OTHERLOCALES')
@@ -43,6 +48,22 @@ if __name__ == "__main__":
             for package in map(lambda x: x.strip(), separator.split(packages_variable)):
                 print('PACKAGES[' + str(indexno) + ']=' + repr(str(package)))
                 indexno += 1
+    if 'python packages' in daconfig and type(daconfig['python packages']) is list:
+        print('declare -a PYTHONPACKAGES')
+        print('export PYTHONPACKAGES')
+        indexno = 0
+        for package in daconfig['python packages']:
+            print('PYTHONPACKAGES[' + str(indexno) + ']=' + repr(str(package)))
+            indexno += 1
+    else:
+        packages_variable = os.getenv('PYTHONPACKAGES', None)
+        if packages_variable is not None and packages_variable != 'null':
+            print('declare -a PYTHONPACKAGES')
+            print('export PYTHONPACKAGES')
+            indexno = 0
+            for package in map(lambda x: x.strip(), separator.split(packages_variable)):
+                print('PYTHONPACKAGES[' + str(indexno) + ']=' + repr(str(package)))
+                indexno += 1
     if 'db' in daconfig:
         if 'prefix' in daconfig['db'] and daconfig['db']['prefix'] is not None:
             if daconfig['db']['prefix'].startswith('postgresql'):
@@ -68,6 +89,15 @@ if __name__ == "__main__":
         print('export REDIS="' + str(daconfig['redis']) + '"')
     if 'rabbitmq' in daconfig and daconfig['rabbitmq'] is not None:
         print('export RABBITMQ="' + str(daconfig['rabbitmq']) + '"')
+    if 'backup days' in daconfig:
+        try:
+            days = int(daconfig['backup days'])
+            assert days > 0
+        except:
+            days = 14
+        print('export DABACKUPDAYS="' + str(days) + '"')
+    else:
+        print('export DABACKUPDAYS="14"')
     if 's3' in daconfig:
         if 'enable' in daconfig['s3'] and daconfig['s3']['enable']:
             print('export S3ENABLE=true')

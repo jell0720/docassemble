@@ -2,14 +2,11 @@ metadata:
   title: Geolocate address
   short title: Geolocate
   documentation: "https://docassemble.org/docs/objects.html#Address.geolocate"
-  example start: 3
-  example end: 6
+  example start: 2
+  example end: 5
 ---
 imports:
   - json
----
-modules:
-  - docassemble.base.util
 ---
 objects:
   - the_address: Address
@@ -64,13 +61,13 @@ subquestion: |
   and
   ${ the_address.location.longitude }.
 
-  % if the_address.attr('neighborhood'):
+  % if hasattr(the_address, 'neighborhood'):
   The address is located in the
   ${ the_address.neighborhood }
   neighborhood.
   % endif
 
-  % if the_address.attr('county'):
+  % if hasattr(the_address, 'county'):
   The address is located in
   ${ the_address.county }.
   % endif

@@ -3,6 +3,7 @@ from docassemble.base.functions import word
 from wtforms import validators, ValidationError, StringField, SubmitField, TextAreaField, SelectMultipleField, SelectField, FileField, HiddenField, RadioField, BooleanField
 import re
 import sys
+from six import string_types
 
 def validate_name(form, field):
     if re.search('[^A-Za-z0-9\-]', field.data):
@@ -58,6 +59,7 @@ class Utilities(FlaskForm):
     scan = SubmitField(word('Scan'))
     language = StringField(word('Language'))
     language_submit = SubmitField(word('Translate'))
+    officeaddin_version = StringField(word('Version'), default='0.0.0.1')
     officeaddin_submit = SubmitField(word('Download'))
     
 class PlaygroundFilesForm(FlaskForm):
@@ -112,6 +114,12 @@ class PlaygroundPackagesForm(FlaskForm):
 class GoogleDriveForm(FlaskForm):
     folder = SelectField(word('Folder'))
     submit = SubmitField(word('Save'))
+    cancel = SubmitField(word('Cancel'))
+
+class OneDriveForm(FlaskForm):
+    folder = SelectField(word('Folder'))
+    submit = SubmitField(word('Save'))
+    cancel = SubmitField(word('Cancel'))
 
 class GitHubForm(FlaskForm):
     configure = SubmitField(word('Configure'))
@@ -152,10 +160,10 @@ class APIKey(FlaskForm):
             return False
         has_error = False
         if self.action.data in ('edit', 'new'):
-            if type(self.name.data) not in (str, unicode) or not re.search(r'[A-Za-z0-9]', self.name.data):
+            if (not isinstance(self.name.data, string_types)) or not re.search(r'[A-Za-z0-9]', self.name.data):
                 self.name.errors.append(word("The name must be filled in."))
                 has_error = True
-            if type(self.method.data) not in (str, unicode) or self.method.data not in ('referer', 'ip', 'none'):
+            if (not isinstance(self.method.data, string_types)) or self.method.data not in ('referer', 'ip', 'none'):
                 self.name.errors.append(word("You must select an option."))
                 has_error = True
         if has_error:

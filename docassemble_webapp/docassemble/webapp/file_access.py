@@ -2,25 +2,28 @@ from docassemble.base.logger import logmessage
 
 import re
 import os
-import pyPdf
+import PyPDF2
 import tempfile
-import urllib
-import urllib2
+try:
+    from urllib.request import urlopen, Request
+except ImportError:
+    from urllib2 import urlopen, Request
 import mimetypes
 from PIL import Image
 import xml.etree.ElementTree as ET
 import docassemble.base.functions
 from docassemble.webapp.core.models import Uploads
 from docassemble.webapp.files import SavedFile, get_ext_and_mimetype
-from flask import session, has_request_context, url_for
+from flask import session, has_request_context
 from flask_login import current_user
 from sqlalchemy import or_, and_
 import docassemble.base.config
+from io import open
 
 import docassemble.webapp.cloud
 cloud = docassemble.webapp.cloud.get_cloud()
 
-def url_if_exists(file_reference):
+def url_if_exists(file_reference, **kwargs):
     parts = file_reference.split(":")
     if len(parts) == 2:
         if cloud:
@@ -37,7 +40,10 @@ def url_if_exists(file_reference):
                 key = str(section) + '/' + str(user_id) + '/' + filename
                 cloud_key = cloud.get_key(key)
                 if cloud_key.does_exist:
-                    return cloud_key.generate_url(3600, display_filename=filename)
+                    if not kwargs.get('inline', False):
+                        return cloud_key.generate_url(3600, display_filename=filename)
+                    else:
+                        return cloud_key.generate_url(3600)
                 return None
         the_path = docassemble.base.functions.static_filename_path(file_reference)
         if the_path is None or not os.path.isfile(the_path):
@@ -104,8 +110,8 @@ def get_info_from_file_reference(file_reference, **kwargs):
             possible_mimetype = 'text/plain'
         result = dict()
         temp_file = tempfile.NamedTemporaryFile(prefix="datemp", suffix='.' + possible_ext, delete=False)
-        req = urllib2.Request(file_reference, headers={'User-Agent' : docassemble.base.config.daconfig.get('user agent', 'Python-urllib/2.7')})
-        response = urllib2.urlopen(req)
+        req = Request(file_reference, headers={'User-Agent' : docassemble.base.config.daconfig.get('user agent', 'Python-urllib/2.7')})
+        response = urlopen(req)
         temp_file.write(response.read())
         #(local_filename, headers) = urllib.urlretrieve(file_reference)
         result['fullpath'] = temp_file.name
@@ -163,7 +169,6 @@ def get_info_from_file_reference(file_reference, **kwargs):
         #logmessage("Extension is " + result['extension'])
         if convert is not None and result['extension'] in convert:
             #logmessage("Converting...")
-            #PPP
             if os.path.isfile(result['path'] + '.' + convert[result['extension']]):
                 #logmessage("Found conversion file ")
                 result['extension'] = convert[result['extension']]
@@ -174,15 +179,21 @@ def get_info_from_file_reference(file_reference, **kwargs):
                 return dict()
         #logmessage("Full path is " + result['fullpath'])
         if os.path.isfile(result['fullpath']) and not has_info:
-            add_info_about_file(result['fullpath'], result)
+            add_info_about_file(result['fullpath'], result['path'], result)
     else:
         logmessage("File reference " + str(file_reference) + " DID NOT EXIST.")
     return(result)
 
-def add_info_about_file(filename, result):
+def add_info_about_file(filename, basename, result):
     if result['extension'] == 'pdf':
         try:
-            reader = pyPdf.PdfFileReader(open(filename))
+            reader = PyPDF2.PdfFileReader(open(filename, 'rb'))
+            result['pages'] = reader.getNumPages()
+        except:
+            result['pages'] = 1
+    elif os.path.isfile(basename + '.pdf'):
+        try:
+            reader = PyPDF2.PdfFileReader(open(basename + '.pdf', 'rb'))
             result['pages'] = reader.getNumPages()
         except:
             result['pages'] = 1
@@ -235,7 +246,7 @@ def get_info_from_file_number(file_number, privileged=False, filename=None):
         return result
     final_filename = result['path'] + '.' + result['extension']
     if os.path.isfile(final_filename):
-        add_info_about_file(final_filename, result)
+        add_info_about_file(final_filename, result['path'], result)
     # else:
     #     logmessage("Filename " + final_filename + "did not exist.")
     return(result)

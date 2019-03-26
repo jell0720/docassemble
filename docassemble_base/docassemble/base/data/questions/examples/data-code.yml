@@ -5,8 +5,11 @@ metadata:
   example start: 2
   example end: 6
 ---
-modules:
-  - docassemble.base.util
+mandatory: True
+code: |
+  seeds_in_orange
+  peach_description
+  user_favorite_fruit
 ---
 variable name: fruits
 data from code:

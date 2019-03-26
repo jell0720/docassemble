@@ -93,6 +93,8 @@ code: |
         markdown_filename = template_filename
       else:
         markdown_filename = templates.convert_file_to_md(template_filename)
+      if markdown_filename is None:
+        raise Exception("The file provided was not a type that could be processed.")
       attachment = attachments.appendObject()
       attachment.type = 'md'
       base_file = varname(base_name(markdown_filename))
@@ -170,16 +172,6 @@ code: |
 mandatory: True
 code: |
   interview.demonstrate()
-  if using_modules:
-    modules.type = 'modules'
-    modules.interview = interview
-    modules.file_name = interview.file_name
-    modules.modules = ['docassemble.base.util']
-    interview.blocks.append(modules)
----
-mandatory: True
-code: |
-  interview.demonstrate()
   if interview.has_decorations():
     decorations.type = 'images'
     decorations.interview = interview
@@ -189,7 +181,10 @@ mandatory: True
 code: |
   interview.demonstrate()
   need(attachments.gathered)
-  varsinuse = Playground().variables_from(interview.source())
+  try:
+    varsinuse = Playground().variables_from(interview.source())
+  except:
+    problem_with_attachment
   end_question = interview.questions.initializeObject('all_done')
   end_question.type = 'question'
   end_question.is_mandatory = True
@@ -557,20 +552,15 @@ subquestion: |
   [Templates section]: ${ url_of('playgroundtemplate') }
 field: splash_screen
 ---
+event: problem_with_attachment
 question: |
-  Do you want to use **docassemble** functions and
-  objects in your interview?
+  Sorry, the file you uploaded could not be
+  processed.
 subquestion: |
-  If you say yes, a `modules` block will be added to your interview.
-  This block will make all of the functions and objects of the
-  `docassemble.base.util` Python module available for use in your
-  interview.
+  The Wizard can only read the variables referenced
+  in a Word document if the Word document contains no
+  Jinja2 errors.  It appears that your file contained
+  an error
 
-  The block will have the same effect as running this Python
-  statement:
-
-  ```from docassemble.base.util import *```
-  
-  If you are not sure what any of this means, feel free to
-  say "No" here.
-yesno: using_modules
+  Please fix the errors, click the Back button, and
+  try uploading it again.

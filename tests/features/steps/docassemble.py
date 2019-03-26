@@ -20,10 +20,6 @@ def do_wait():
         else:
             time.sleep(world.wait_seconds)
 
-def do_wait():
-    if world.wait_seconds > 0:
-        time.sleep(world.wait_seconds)
-
 @step('I spend at least ([0-9]+) seconds? on each page')
 def change_wait_seconds(step, secs):
     world.wait_seconds = float(secs)
@@ -91,6 +87,14 @@ def start_interview(step, interview_name):
     do_wait()
     world.browser.get(world.da_path + "/?i=" + interview_name + '&reset=1')
     world.browser.wait_for_it()
+    elems = world.browser.find_elements_by_xpath('//h1[text()="Error"]')
+    assert len(elems) == 0
+
+@step('I start the possibly error-producing interview "([^"]+)"')
+def start_error_interview(step, interview_name):
+    do_wait()
+    world.browser.get(world.da_path + "/?i=" + interview_name + '&reset=1')
+    world.browser.wait_for_it()
 
 @step('I click the back button')
 def click_back_button(step):
@@ -101,7 +105,7 @@ def click_back_button(step):
 @step('I click the question back button')
 def click_question_back_button(step):
     do_wait()
-    world.browser.find_element_by_id('questionbackbutton').click()
+    world.browser.find_element_by_css_selector('.questionbackbutton').click()
     world.browser.wait_for_it()
 
 @step('I click the button "([^"]+)"')
@@ -110,10 +114,16 @@ def click_button(step, button_name):
     do_wait()
     success = False
     try:
-        world.browser.find_element_by_xpath('//button[text()="' + button_name + '"]').click()
+        world.browser.find_element_by_xpath('//button/span[text()="' + button_name + '"]').click()
         success = True
     except:
        pass
+    if not success:
+        try:
+            world.browser.find_element_by_xpath('//button[text()="' + button_name + '"]').click()
+            success = True
+        except:
+            pass
     if not success:
        for elem in world.browser.find_elements_by_xpath('//a[text()="' + button_name + '"]'):
            try:
@@ -131,10 +141,16 @@ def click_button_post(step, choice):
     do_wait()
     success = False
     try:
-        world.browser.find_element_by_xpath('//button[text()="' + button_name + '"]').click()
+        world.browser.find_element_by_xpath('//button/span[text()="' + button_name + '"]').click()
         success = True
     except:
         pass
+    if not success:
+        try:
+            world.browser.find_element_by_xpath('//button[text()="' + button_name + '"]').click()
+            success = True
+        except:
+            pass
     if not success:
         for elem in world.browser.find_elements_by_xpath('//a[text()="' + button_name + '"]'):
             try:
@@ -210,6 +226,19 @@ def set_field(step, label, value):
         pass
     elem.send_keys(value)
 
+@step('I set the (first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth) "([^"]+)" to "([^"]*)"')
+def set_nth_field(step, ordinal, label, value):
+    try:
+        elem = world.browser.find_element_by_id(world.browser.find_element_by_xpath('(//label[text()="' + label + '"])[' + str(1+2*(number_from_ordinal[ordinal] - 1)) + ']').get_attribute("for"))
+    except:
+        elem = world.browser.find_element_by_id(world.browser.find_element_by_xpath('(//label//a[text()="' + label + '"])[' + str(1+2*(number_from_ordinal[ordinal] - 1)) + ']/parent::label').get_attribute("for"))
+    try:
+        elem.clear()
+    except:
+        pass
+    elem.send_keys(value)
+    elem.send_keys("\t")
+
 @step('I select "([^"]+)" in the combobox')
 def set_combobox(step, value):
     togglers = world.browser.find_elements_by_xpath("//button[contains(@class, 'dacomboboxtoggle')]")
@@ -236,6 +265,17 @@ def set_combobox_text(step, value):
 @step('I select "([^"]+)" as the "([^"]+)"')
 def select_option(step, value, label):
     elem = world.browser.find_element_by_id(world.browser.find_element_by_xpath('//label[text()="' + label + '"]').get_attribute("for"))
+    found = False
+    for option in elem.find_elements_by_tag_name('option'):
+        if option.text == value:
+            found = True
+            option.click()
+            break
+    assert found
+
+@step('I select "([^"]+)" as the (first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth) "([^"]+)"')
+def select_nth_option(step, value, ordinal, label):
+    elem = world.browser.find_element_by_id(world.browser.find_element_by_xpath('(//label[text()="' + label + '"])[' + str(1+2*(number_from_ordinal[ordinal] - 1)) + ']').get_attribute("for"))
     found = False
     for option in elem.find_elements_by_tag_name('option'):
         if option.text == value:
@@ -290,13 +330,13 @@ def set_mc_option_under(step, option, label):
         span = div.find_element_by_xpath('.//span[text()[contains(.,"' + option + '")]]')
     option_label = span.find_element_by_xpath("..")
     option_label.click()
-        
+
 @step('I click the "([^"]+)" option')
 def set_mc_option(step, choice):
     try:
-        span_elem = world.browser.find_element_by_xpath('//span[text()="' + choice + '"]')
+        span_elem = world.browser.find_element_by_xpath('//form[@id="daform"]//span[text()="' + choice + '"]')
     except NoSuchElementException:
-        span_elem = world.browser.find_element_by_xpath('//span[text()[contains(.,"' + choice + '")]]')
+        span_elem = world.browser.find_element_by_xpath('//form[@id="daform"]//span[text()[contains(.,"' + choice + '")]]')
     label_elem = span_elem.find_element_by_xpath("..")
     label_elem.click()
 
@@ -309,7 +349,7 @@ def set_mc_option_under_pre(step, option, label):
         span = div.find_element_by_xpath('.//span[text()[contains(.,"' + option + '")]]')
     option_label = span.find_element_by_xpath("..")
     option_label.click()
-        
+
 @step('I click the option "([^"]+)"')
 def set_mc_option_pre(step, choice):
     try:
@@ -330,7 +370,18 @@ def url_of_page(step, url):
 @step('I exit by clicking "([^"]+)"')
 def exit_button(step, button_name):
     do_wait()
-    world.browser.find_element_by_xpath('//button[text()="' + button_name + '"]').click()
+    success = False
+    try:
+        world.browser.find_element_by_xpath('//button/span[text()="' + button_name + '"]').click()
+        success = True
+    except:
+        pass
+    if not success:
+        try:
+            world.browser.find_element_by_xpath('//button[text()="' + button_name + '"]').click()
+            success = True
+        except:
+            pass
     time.sleep(1.0)
 
 @step('I save a screenshot to "([^"]+)"')

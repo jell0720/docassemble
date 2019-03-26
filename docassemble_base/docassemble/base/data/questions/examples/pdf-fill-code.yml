@@ -3,9 +3,6 @@ metadata:
   documentation: "https://docassemble.org/docs/documents.html#template code"
   example start: 8
 ---
-modules:
-  - docassemble.base.util
----
 objects:
   - user: Individual
 ---
@@ -31,6 +28,14 @@ yesno: likes_pears
 question: |
   Do you like oranges?
 yesno: likes_oranges
+---
+mandatory: True
+code: |
+  user.name.first
+  likes_apples
+  likes_oranges
+  likes_pears
+  likes_toast
 ---
 question: |
   Here is your PDF form

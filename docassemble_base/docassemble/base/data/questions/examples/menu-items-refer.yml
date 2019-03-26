@@ -1,11 +1,9 @@
 metadata:
   title: Several interviews in one
   short title: Multi-interview
-  example start: 2
-  example end: 3
----
-modules:
-  - docassemble.base.util
+  documentation: "https://docassemble.org/docs/logic.html#multiple interviews links"
+  example start: 1
+  example end: 2
 ---
 mandatory: True
 code: |

@@ -2,11 +2,8 @@ metadata:
   title: Fill fields with field code
   short title: Fill
   documentation: "https://docassemble.org/docs/documents.html#template code"
-  example start: 8
-  example end: 8
----
-modules:
-  - docassemble.base.util
+  example start: 7
+  example end: 7
 ---
 objects:
   recipient: Individual
@@ -54,6 +51,9 @@ choices:
 mandatory: true
 code: |
   introduction_shown
+  subject_of_letter
+  recipient.name.first
+  recipient.address.address
 ---
 mandatory: True
 question: Here is your document.

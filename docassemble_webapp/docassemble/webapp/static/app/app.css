@@ -64,11 +64,11 @@ body.dainactive .form-control{
     background-color: #f2dede;
 }
 
-body.dainactive > .navbar-dark {
+body.dainactive > div > .navbar-dark {
     background-image: linear-gradient(to bottom,#883c3c 0,#522 100%);
 }
 
-body.dacontrolled > .navbar-dark {
+body.dacontrolled > div > .navbar-dark {
     background-image: linear-gradient(to bottom,#883c3c 0,#522 100%);
 }
 
@@ -109,12 +109,22 @@ body.dacontrolled > .navbar-dark {
     padding: 0;
 }
 
+.daiconbox > a:focus,
+.daiconbox > a:hover {
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0, 0, 0, 0.25);
+}
+
 .nomargin {
     margin: 0;
 }
 
 .daiconbox td img {
     margin: 2px 0px 2px 0px;
+}
+
+a.nohover {
+    display: block;
 }
 
 a.nohover:hover {
@@ -156,6 +166,10 @@ button.btn-da-custom {
     height: 8em;
     text-align: center;
     vertical-align: middle;
+}
+
+button.btn-da-custom:focus {
+    outline: 1px dotted !important;
 }
 
 .checkbox_count {
@@ -392,9 +406,9 @@ table.datable {
 .vspace {
     margin-top: 10px;
 }
-.navbar-brand:focus {
+/*.navbar-brand:focus {
     outline: none;
-}
+}*/
 .mynavbar-text {
   float: right;
   outline: none;
@@ -815,6 +829,21 @@ select.playground-select {
     outline: 0;
 }
 
+a.uploadbutton {
+    padding-top: 1px;
+    padding-bottom: 1px;
+}
+
+/* a.uploadbutton { */
+/*     display: inline-block; */
+/*     background: url(upload.svg) no-repeat right; */
+/*     background-size: 1em 1em; */
+/*     padding: 2px 2px 2px 2px; */
+/*     width: 1.2em; */
+/*     height: 1.2em; */
+/*     cursor: pointer; */
+/* } */
+
 /* a.darunbutton { */
 /*     color: white; */
 /*     font-size: 14px; */
@@ -904,7 +933,7 @@ iframe.observer {
 }
 
 .no-outline:focus {
-    outline: none;
+    /*outline: none;*/
     text-decoration: none;
 }
 
@@ -1203,7 +1232,7 @@ select.input-embedded {
     background-color: #f0f0ff;
     -moz-appearance: none;
     -webkit-appearance: none;
-    outline: 0;
+    /*outline: 0;*/
     border-color: #888888;
     border-radius: 2px;
     border-width: 0px 0px 1px 0px;
@@ -1220,7 +1249,7 @@ select.input-embedded:focus {
 }
 
 select.input-embedded option {
-    outline: 0;
+    /*outline: 0;*/
     border-style: none;
     margin: 0px;
 }
@@ -1241,7 +1270,7 @@ input.file-embedded {
     background-color: #f0f0ff;
     -moz-appearance: none;
     -webkit-appearance: none;
-    outline: 0;
+    /*outline: 0;*/
     border-style: none;
     border-radius: 2px;
     border-width: 0px;
@@ -1358,11 +1387,17 @@ blockquote.limheight {
     color: #a94442;
 }
 
+.help-block {
+    color: #a94442;
+}
+
 div.danavnested {
     padding-left: 20px;
 }
 
-div.danav-horiz {
+div.danav-horiz a.danavlink {
+    align-self: flex-end !important;
+    text-align: center;
 }
 
 div.danavnested-horiz {
@@ -1496,6 +1531,17 @@ div.danavdiv {
 
 a.danavlink {
     cursor: text;
+    position: relative;
+}
+
+a.danavlink .toggler {
+    position: absolute;
+    left: 0;
+    cursor: pointer;
+}
+
+a.danavlink .toggler:hover {
+    text-decoration: none;
 }
 
 .ul-toggle {
@@ -1607,6 +1653,11 @@ div.danavbar {
 	left: 0;
 	width: 100%;
 	height: 100%;
+}
+
+video {
+    width: 100% !important;
+    height: auto !important;
 }
 
 .daspaceafter {
@@ -1811,7 +1862,7 @@ div.constraintlist div + div {
 	-ms-touch-action: none;
 	-webkit-tap-highlight-color: rgba(0,0,0,0);
     }
-    body.dasignature > div.container > div.row > div.col {
+    body.dasignature > div > div.container > div.row > div.col {
 	padding: 0;
     }
     /* .dasignature section { */
@@ -1900,13 +1951,13 @@ div.constraintlist div + div {
     /* width: 100%; */
     /* max-width: 540px; */
 }
-.dasignature > .navbar {
+.dasignature > div > .navbar {
     display: none;
 }
-.dasignature > .daright {
+.dasignature > div > .daright {
     display: none;
 }
-.dasignature > .daattributions {
+.dasignature > div > .daattributions {
     display: none;
 }
 .sighidesmall {
@@ -1923,13 +1974,16 @@ div.constraintlist div + div {
     body.dasignature {
 	padding-top: 60px;
     }
-    .dasignature > .navbar {
+    body.dasignature.navbarhidden {
+	padding-top: 0px;
+    }
+    .dasignature > div > .navbar {
         display: block;
     }
-    .dasignature > .daright {
+    .dasignature > div > > .daright {
         display: block;
     }
-    .dasignature > .daattributions {
+    .dasignature > div > .daattributions {
         display: block;
     }
     /* .sighidesmall { */
@@ -2006,3 +2060,61 @@ div.constraintlist div + div {
 /* 	text-decoration: underline; */
 /*     } */
 /* } */
+
+.wordplayground .dasearchicon {
+    display: none;
+}
+
+@media (max-width: 991px) {
+    .rlap-parent {
+	margin-bottom: 0 !important;
+    }
+}
+
+@media (min-width: 992px) {
+    .rlap-parent {
+	position: relative;
+    }
+    .rlap {
+	position: absolute;
+	margin-left: 100%;
+	width: 50%;
+    }
+}
+
+div.progress + div.audiovideo-control {
+    margin-top: 0.5rem !important;
+}
+
+.audio-control {
+    width: 100%;
+}
+
+.js-embedded {
+    overflow: auto;
+}
+
+div.hide-navbar .navbar {
+    display: none;
+}
+
+tr:first-child .datableup, tr:last-child .databledown {
+    opacity: 0.5;
+    cursor: not-allowed !important;
+}
+
+.datablehighlighted {
+  -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 16px rgba(102, 102, 102, .6);
+          box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 16px rgba(102, 102, 102, .6);
+}
+
+.CodeMirror-fullscreen {
+  margin-top: 55px;
+}
+
+@media (max-width: 767px) {
+    .navbar-brand {
+	max-width: 70%;
+	overflow: hidden;
+    }
+}

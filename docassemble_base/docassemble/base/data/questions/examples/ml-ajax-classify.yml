@@ -1,14 +1,7 @@
 metadata:
   title: Machine learning
-  example start: 2
+  example start: 1
   example end: 5
-  documentation: "https://docassemble.org/docs/ml.html"
----
-features:
-  javascript: ml-classify.js
----
-modules:
-  - docassemble.base.util
 ---
 code: |
   ml = SimpleTextMachineLearner(group_id='sug')
@@ -24,7 +17,7 @@ code: |
 ---
 reconsider: True
 code: |
-  current_keys = " ".join(map(lambda x: '<a class="mysug btn btn-primary">' + str(x) + '</a>', ml.dependent_in_use()))
+  current_keys = " ".join(map(lambda x: '<a class="mysug btn btn-primary">' + text_type(x) + '</a>', ml.dependent_in_use()))
 ---
 question: |
   How should this be classified?

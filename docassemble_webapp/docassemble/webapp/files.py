@@ -1,10 +1,17 @@
 import sys
+from six import string_types, text_type, PY2
 import os
 import re
 import json
 import pytz
 import shutil
-import urllib
+import requests
+from io import open
+if PY2:
+    from urllib import urlencode, urlretrieve
+else:
+    from urllib.request import urlretrieve
+    from urllib.parse import urlencode
 import pycurl
 import tempfile
 import mimetypes
@@ -160,7 +167,13 @@ class SavedFile(object):
     def fetch_url_post(self, url, post_args, **kwargs):
         filename = kwargs.get('filename', self.filename)
         self.fix()
-        urllib.urlretrieve(url, os.path.join(self.directory, filename), None, urllib.urlencode(post_args))
+        r = requests.post(url, data=post_args)
+        if r.status_code != 200:
+            raise DAError('fetch_url_post: retrieval from ' + url + 'failed')
+        with open(os.path.join(self.directory, filename), 'wb') as fp:
+            for block in r.iter_content(1024):
+                fp.write(block)
+        #urlretrieve(url, os.path.join(self.directory, filename), None, urlencode(post_args))
         self.save()
         return
     def size_in_bytes(self, **kwargs):
@@ -209,8 +222,12 @@ class SavedFile(object):
     def write_content(self, content, **kwargs):
         filename = kwargs.get('filename', self.filename)
         self.fix()
-        with open(os.path.join(self.directory, filename), 'wb') as ifile:
-            ifile.write(content)
+        if kwargs.get('binary', False):
+            with open(os.path.join(self.directory, filename), 'wb') as ifile:
+                ifile.write(content)
+        else:
+            with open(os.path.join(self.directory, filename), 'w', encoding='utf-8') as ifile:
+                ifile.write(content)
         if kwargs.get('save', True):
             self.save()
         return
@@ -344,14 +361,14 @@ class SavedFile(object):
                     #sys.stderr.write("finalize: saving " + str(self.section) + '/' + str(self.file_number) + '/' + str(filename) + "\n")
                     key.set_contents_from_filename(fullpath)
                     self.modtimes[filename] = key.get_epoch_modtime()
-        for filename, key in self.keydict.iteritems():
+        for filename, key in self.keydict.items():
             if filename not in existing_files:
-                #sys.stderr.write("finalize: deleting " + str(self.section) + '/' + str(self.file_number) + '/' + str(filename) + "\n")
+                sys.stderr.write("finalize: deleting " + str(self.section) + '/' + str(self.file_number) + '/' + str(filename) + "\n")
                 try:
                     key.delete()
                 except:
                     pass
-        #sys.stderr.write("finalize: ending " + str(self.section) + '/' + str(self.file_number) + "\n")
+        sys.stderr.write("finalize: ending " + str(self.section) + '/' + str(self.file_number) + "\n")
         return
         
 def get_ext_and_mimetype(filename):
@@ -375,9 +392,9 @@ def publish_package(pkgname, info, author_info, tz_name):
     packagedir = os.path.join(directory, 'docassemble-' + str(pkgname))
     output = "Publishing docassemble." + pkgname + " to PyPI . . .\n\n"
     try:
-        output += subprocess.check_output(['python', 'setup.py', 'sdist'], cwd=packagedir, stderr=subprocess.STDOUT)
+        output += subprocess.check_output(['python', 'setup.py', 'sdist'], cwd=packagedir, stderr=subprocess.STDOUT).decode()
     except subprocess.CalledProcessError as err:
-        output += err.output
+        output += err.output.decode()
     dist_file = None
     dist_dir = os.path.join(packagedir, 'dist')
     if not os.path.isdir(dist_dir):
@@ -393,7 +410,7 @@ def publish_package(pkgname, info, author_info, tz_name):
         #         output += err.output
         try:
             #output += str(['twine', 'upload', '--repository', 'pypi', '--username', str(current_user.pypi_username), '--password', str(current_user.pypi_password), os.path.join('dist', '*')])
-            output += subprocess.check_output(['twine', 'upload', '--repository', 'pypi', '--username', str(current_user.pypi_username), '--password', str(current_user.pypi_password), os.path.join('dist', '*')], cwd=packagedir, stderr=subprocess.STDOUT)
+            output += subprocess.check_output(['twine', 'upload', '--repository', 'pypi', '--username', str(current_user.pypi_username), '--password', str(current_user.pypi_password), os.path.join('dist', '*')], cwd=packagedir, stderr=subprocess.STDOUT).decode()
         except subprocess.CalledProcessError as err:
             output += "Error calling twine upload.\n"
             output += err.output
@@ -414,7 +431,7 @@ def make_package_zip(pkgname, info, author_info, tz_name):
             thefilename = os.path.join(root, file)
             zinfo = zipfile.ZipInfo(thefilename[trimlength:], date_time=datetime.datetime.utcfromtimestamp(os.path.getmtime(thefilename)).replace(tzinfo=pytz.utc).astimezone(the_timezone).timetuple())
             zinfo.compress_type = zipfile.ZIP_DEFLATED
-            zinfo.external_attr = 0644 << 16L
+            zinfo.external_attr = 0o644 << 16
             with open(thefilename, 'rb') as fp:
                 zf.writestr(zinfo, fp.read())
             #zf.write(thefilename, thefilename[trimlength:])
@@ -428,16 +445,16 @@ def make_package_dir(pkgname, info, author_info, tz_name, directory=None):
     for sec in ['playground', 'playgroundtemplate', 'playgroundstatic', 'playgroundsources', 'playgroundmodules']:
         area[sec] = SavedFile(author_info['id'], fix=True, section=sec)
     dependencies = ", ".join(map(lambda x: repr(x), sorted(info['dependencies'])))
-    initpy = """\
+    initpy = u"""\
 try:
     __import__('pkg_resources').declare_namespace(__name__)
 except ImportError:
     __path__ = __import__('pkgutil').extend_path(__path__, __name__)
 
 """
-    licensetext = info['license']
+    licensetext = text_type(info['license'])
     if re.search(r'MIT License', licensetext):
-        licensetext += '\n\nCopyright (c) ' + str(datetime.datetime.now().year) + ' ' + unicode(author_info['first name']) + " " + unicode(author_info['last name']) + """
+        licensetext += u'\n\nCopyright (c) ' + text_type(datetime.datetime.now().year) + ' ' + text_type(author_info['first name']) + u" " + text_type(author_info['last name']) + u"""
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -458,19 +475,17 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
     if info['readme'] and re.search(r'[A-Za-z]', info['readme']):
-        readme = info['readme']
+        readme = text_type(info['readme'])
     else:
-        readme = '# docassemble.' + str(pkgname) + "\n\n" + info['description'] + "\n\n## Author\n\n" + author_info['author name and email'] + "\n\n"
-    manifestin = """\
+        readme = u'# docassemble.' + str(pkgname) + "\n\n" + info['description'] + "\n\n## Author\n\n" + author_info['author name and email'] + u"\n\n"
+    manifestin = u"""\
 include README.md
 """
-    setupcfg = """\
+    setupcfg = u"""\
 [metadata]
 description-file = README.md
 """
-    setuppy = """\
-#!/usr/bin/env python
-
+    setuppy = u"""\
 import os
 import sys
 from setuptools import setup, find_packages
@@ -516,7 +531,7 @@ def find_package_data(where='.', package='', exclude=standard_exclude, exclude_d
     return out
 
 """
-    setuppy += "setup(name='docassemble." + str(pkgname) + "',\n" + """\
+    setuppy += u"setup(name='docassemble." + str(pkgname) + "',\n" + """\
       version=""" + repr(info['version']) + """,
       description=(""" + repr(info['description']) + """),
       long_description=""" + repr(readme) + """,
@@ -533,19 +548,19 @@ def find_package_data(where='.', package='', exclude=standard_exclude, exclude_d
      )
 
 """
-    templatereadme = """\
+    templatereadme = u"""\
 # Template directory
 
 If you want to use non-standard document templates with pandoc,
 put template files in this directory.
 """
-    staticreadme = """\
+    staticreadme = u"""\
 # Static file directory
 
 If you want to make files available in the web app, put them in
 this directory.
 """
-    sourcesreadme = """\
+    sourcesreadme = u"""\
 # Sources directory
 
 This directory is used to store word translation files, 
@@ -588,34 +603,34 @@ machine learning training files, and other source files.
         orig_file = os.path.join(area['playgroundsources'].directory, the_file)
         if os.path.exists(orig_file):
             shutil.copy2(orig_file, os.path.join(sourcesdir, the_file))
-    with open(os.path.join(packagedir, 'README.md'), 'w') as the_file:
+    with open(os.path.join(packagedir, 'README.md'), 'w', encoding='utf-8') as the_file:
         the_file.write(readme)
     os.utime(os.path.join(packagedir, 'README.md'), (info['modtime'], info['modtime']))
-    with open(os.path.join(packagedir, 'LICENSE'), 'w') as the_file:
+    with open(os.path.join(packagedir, 'LICENSE'), 'w', encoding='utf-8') as the_file:
         the_file.write(licensetext)
     os.utime(os.path.join(packagedir, 'LICENSE'), (info['modtime'], info['modtime']))
-    with open(os.path.join(packagedir, 'setup.py'), 'w') as the_file:
+    with open(os.path.join(packagedir, 'setup.py'), 'w', encoding='utf-8') as the_file:
         the_file.write(setuppy)
     os.utime(os.path.join(packagedir, 'setup.py'), (info['modtime'], info['modtime']))
-    with open(os.path.join(packagedir, 'setup.cfg'), 'w') as the_file:
+    with open(os.path.join(packagedir, 'setup.cfg'), 'w', encoding='utf-8') as the_file:
         the_file.write(setupcfg)
     os.utime(os.path.join(packagedir, 'setup.cfg'), (info['modtime'], info['modtime']))
-    with open(os.path.join(packagedir, 'MANIFEST.in'), 'w') as the_file:
+    with open(os.path.join(packagedir, 'MANIFEST.in'), 'w', encoding='utf-8') as the_file:
         the_file.write(manifestin)
     os.utime(os.path.join(packagedir, 'MANIFEST.in'), (info['modtime'], info['modtime']))
-    with open(os.path.join(packagedir, 'docassemble', '__init__.py'), 'w') as the_file:
+    with open(os.path.join(packagedir, 'docassemble', '__init__.py'), 'w', encoding='utf-8') as the_file:
         the_file.write(initpy)
     os.utime(os.path.join(packagedir, 'docassemble', '__init__.py'), (info['modtime'], info['modtime']))
-    with open(os.path.join(packagedir, 'docassemble', pkgname, '__init__.py'), 'w') as the_file:
-        the_file.write('')
+    with open(os.path.join(packagedir, 'docassemble', pkgname, '__init__.py'), 'w', encoding='utf-8') as the_file:
+        the_file.write(u'')
     os.utime(os.path.join(packagedir, 'docassemble', pkgname, '__init__.py'), (info['modtime'], info['modtime']))
-    with open(os.path.join(templatesdir, 'README.md'), 'w') as the_file:
+    with open(os.path.join(templatesdir, 'README.md'), 'w', encoding='utf-8') as the_file:
         the_file.write(templatereadme)
     os.utime(os.path.join(templatesdir, 'README.md'), (info['modtime'], info['modtime']))
-    with open(os.path.join(staticdir, 'README.md'), 'w') as the_file:
+    with open(os.path.join(staticdir, 'README.md'), 'w', encoding='utf-8') as the_file:
         the_file.write(staticreadme)
     os.utime(os.path.join(staticdir, 'README.md'), (info['modtime'], info['modtime']))
-    with open(os.path.join(sourcesdir, 'README.md'), 'w') as the_file:
+    with open(os.path.join(sourcesdir, 'README.md'), 'w', encoding='utf-8') as the_file:
         the_file.write(sourcesreadme)
     os.utime(os.path.join(sourcesdir, 'README.md'), (info['modtime'], info['modtime']))
     return directory

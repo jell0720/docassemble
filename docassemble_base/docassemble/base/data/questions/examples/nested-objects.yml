@@ -1,11 +1,8 @@
 metadata:
   title: Nested groups
   documentation: "https://docassemble.org/docs/groups.html#nested objects"
-  example start: 2
-  example end: 12
----
-modules:
-  - docassemble.base.util
+  example start: 1
+  example end: 11
 ---
 objects:
   - user: Individual
@@ -69,7 +66,7 @@ subquestion: |
   % for sibling in user.sibling:
   You have a sibling named ${ sibling }.
  
-  % for company_type in sibling.company_hired:
+  % for company_type in sibling.company_hired.keys():
   ${ sibling } has hired a ${ company_type }
   called ${ sibling.company_hired[company_type] },
   which has a principal place of business in

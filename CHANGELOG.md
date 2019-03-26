@@ -1,5 +1,786 @@
 # Change Log
 
+## [0.4.26] - 2019-03-25
+### Fixed
+- Enter key caused browsers to press the `question back button`.
+- Newest version of `textstat` not compatible with Python 2.7.
+
+## [0.4.25] - 2019-03-22
+### Changed
+- When using Google Drive Sync, deleting file from Playground now
+  permanently deletes file from Google Drive, rather than send it to
+  the Trash.
+### Fixed
+- KeyError during initial GitHub repository creation.
+- Exception could be raised if docstring in a dependency module was
+  bytes.
+- Methods not appearing in Playground sidebar in Python 3.
+- File uploads failing in Internet Explorer.
+
+## [0.4.24] - 2019-03-21
+### Added
+- The `maximum content length` configuration directive.
+- The `image upload type` configuration directive, feature, and field
+  specifier.
+### Fixed
+- Error in `log` service.
+- A long interview title could cause wrapping in the navigation bar on
+  mobile.
+
+## [0.4.23] - 2019-03-19
+### Added
+- The `progress bar multiplier` and `progress bar method` features.
+### Changed
+- Embedded blocks can use generic objects and iterators.
+- Help buttons are now "info" color instead of "secondary" color.
+### Fixed
+- Error when uploading files through the API.
+- Error resulting from `add_action()` under some circumstances.
+
+## [0.4.22] - 2019-03-17
+### Fixed
+- Section setting error.
+
+## [0.4.21] - 2019-03-16
+### Added
+- The `nav.hide()`, `nav.unhide()`, and `nav.visible()` methods.
+### Fixed
+- Excessive memory usage while looking for cron tasks.
+- Could not upload more than one module file to Playground at the same time.
+- Playground Wizard errors.
+
+## [0.4.20] - 2019-03-13
+### Added
+- The `set_save_status()` function.
+- The `id_tag` option to `action_button_html()`.
+- Field number in error messages.
+### Changed
+- Removed redirects after non-standard URL parameters.
+- The `add_action()` button behaves more consistently with `.gather()`.
+- The `new_window` option to `action_button_html()` can be used to set
+  the `target` of the hyperlink.
+### Fixed
+- Field trim JavaScript was affecting file variables and triggering an
+  error.
+
+## [0.4.19] - 2019-03-10
+### Added
+- The `only sets` modifier.
+### Changed
+- The `allow non-idempotent questions` specifier in `metadata` was
+  removed and replaced with a Configuration directive.
+- The `allow non-idempotent questions` Configuration directive is set
+  to `False` by default in the default Configuration.  This will
+  affect new servers but not existing servers.
+- The API validation `Referer` constraint checks against the `Origin` if
+  there is no `Referer`.
+
+## [0.4.18] - 2019-03-09
+### Added
+- Fullscreen option for code editing.
+### Fixed
+- Python 3 errors during GitHub integration process.
+
+## [0.4.17] - 2019-03-08
+### Added
+- The `python packages` Configuration directive and the
+  `PYTHONPACKAGES` Docker environment variable.
+### Fixed
+- Error when updating references in .docx file.
+- `object_type_repr` error raised from Jinja2.
+- `filter()` returning zero elements from non-empty list caused
+  re-gathering.
+- Dueling `uncheck others` fields had wrong CSS after unchecking.
+- Thumbnails for .docx files.
+- Blanking of dates in Firefox on blur.
+
+## [0.4.16] - 2019-03-04
+### Fixed
+- Playground packages copied to wrong location on Python 3.
+
+## [0.4.15] - 2019-03-04
+### Fixed
+- LuaLaTeX was not properly being detected.
+
+## [0.4.14] - 2019-03-04
+### Fixed
+- LibreOffice initialization encountered circularity.
+
+## [0.4.13] - 2019-03-03
+### Changed
+- The `none of the above` specifier can be used with `datatype:
+  object_radio`.
+- The `docassemble.base.util` is now loaded by default.
+- Switched to LuaLaTeX for better Cyrillic support.  Requires server restart.
+
+## [0.4.12] - 2019-03-01
+### Added
+- The `allow reordering` specifier in `table`.
+### Fixed
+- Unicode problem reading S3 keys as strings.
+
+## [0.4.11] - 2019-02-28
+### Added
+- The `error action` specifier in `metadata`.
+
+## [0.4.10] - 2019-02-27
+### Added
+- The `tagged pdf` option for `docx template file` document assembly.
+### Changed
+- The `pdf/a` options now create PDF/A documents directly with
+  LibreOffice.
+- The `comma_list()` and `comma_and_list()` now work with a wider
+  variety of iterables.
+
+## [0.4.9] - 2019-02-25
+### Added
+- Support for sending text messages using WhatsApp using `send_sms`.
+### Changed
+- Non-required file upload variables will be set to `None` instead of
+  being ignored.
+### Fixed
+- Unicode error during package upgrade when `pip show` returns bytes
+  that cannot be decoded as UTF-8.
+- JavaScript error with Google Maps.
+
+## [0.4.8] - 2019-02-24
+### Changed
+- Upgraded Font Awesome to 5.7.2.
+
+## [0.4.7] - 2019-02-23
+### Fixed
+- Unicode problem with user names.
+- Unicode problem with OCR.
+- SQL concurrency problem with row updates.
+- The `instanceName` on file uploads.
+
+## [0.4.6] - 2019-02-19
+### Changed
+- The `error help` metadata specifier now accepts a dictionary of
+  language codes and messages.
+### Added
+- The `verbose error messages` configuration directive.
+### Fixed
+- Unicode problem with Markdown documents.
+- Deep copy error with `get_question_data()`.
+
+## [0.4.5] - 2019-02-18
+### Changed
+- Group gathering with `ask_number=True` will use the value of
+  `there_are_any` if it is defined and set to false.
+- When editing list using a table, completeness of elements will be
+  re-evaluated.
+- Back button embedded in question is now "link" style.
+### Added
+- The `subject_as_html()` and `content_as_html()` methods of objects
+  generated from a `template`.
+- The `hide navbar` feature.
+- The `js_target` URL parameter for embedding the **docassemble**
+  interview into an element on another web site.
+- The `gathered_and_complete()` method of the `DAList` and `DADict`.
+### Fixed
+- Error logging in with Auth0 in Python 3.
+- The `comma_and_list()` function was not Unicode-friendly.
+- Method of adjusting encryption of interviews in session after
+  logging in was inefficient.
+- API verification not working in Python 3.
+- Screen reader in Python 3.
+- Playground commit not pushing to organizational repositories.
+
+## [0.4.4] - 2019-02-15
+### Added
+- The `convertapi secret` configuration directive.
+- API endpoints for listing and deleting Playground files.
+### Fixed
+- JSON serialization with unusual dict keys.
+- Screen scrolling problem in Playground folders.
+
+## [0.4.3] - 2019-02-13
+### Added
+- The `string_types` and `PY2` names, imported from the `six` package.
+- The `allow non-idempotent questions` specifier in `metadata`.
+### Changed
+- The `post` screen part is now positioned below the `right` screen
+  part on small screens.
+### Fixed
+- The screen parts feature was not fully implemented and documented.
+- The `required privileges` feature was not fully implemented.
+- Editing yourself through `/userlist` would disable yourself.
+- Error with text-to-speech cache.
+- Non-required file upload variables were being set to `'None'`
+  instead of being ignored.
+
+## [0.4.2] - 2019-02-10
+### Added
+- Additional SQL indexes.
+- The `default screen parts` block.
+- The `required privileges` specifier in `metadata`.
+### Changed
+- The `set_title()` function was renamed to `set_parts()` and now
+  supports setting any screen part.
+### Fixed
+- Error with OCR.
+- Error with screen reader.
+- Error with `concatenate_files()`.
+- The current section when showing a `nav` in a question was not
+  always current.
+- Wrong formatting of subsections in sections sidebar under some
+  circumstances.
+
+## [0.4.1] - 2019-02-04
+### Added
+- Placeholder CSS classes for customization.
+- Support for alternative Redis ports and database offsets.
+
+## [0.4.0] - 2019-02-04
+### Added
+- The `DAPYTHONVERSION` Docker environment variable.
+- The `text_type()` function.
+### Changed
+- The system is now compatible with Python 3.5.
+- The `subdivision_type()` algorithm was improved.
+### Fixed
+- The update script failed under some circumstances due to a SQL
+  error.
+
+## [0.3.36] - 2019-01-24
+### Fixed
+- Not all login methods were redirecting the user back to the
+  interview when they should have.
+
+## [0.3.35] - 2019-01-22
+### Added
+- The `resume interview after login` configuration directive.
+### Changed
+- The `/api/session` API endpoint and the `set_session_variables()`
+  function now accept the `event_list` parameter and can get past
+  `force_ask()` diversions.
+- More robust code injection detection mechanism.
+### Fixed
+- Unicode error with certain Spanish numbers.
+
+## [0.3.34] - 2019-01-20
+### Added
+- Customizability of standard validation messages using the `validation
+  messages` field modifier or the `default validation messages` block.
+- Option to `.geolocate()` method to populate attributes of `Address`
+  using a single-string address.
+- Options for setting `alt_text` using `[FILE]`, `[QR]`, `.show()`,
+  and the `.alt_text` attribute on `DAFile` or `DAStaticFile`.
+- The `.set_alt_text()` and `.get_alt_text()` methods of file objects.
+- The `template password` option for `pdf template file` (new `docker
+  run` required).
+### Changed
+- Upgraded Pandoc to version 2.5.1 (new `docker run` required).
+- UI changes for keyboard navigation of sections.
+### Fixed
+- Empty documents generated by Markdown were resulting in zero byte
+  PDFs rather than one-page blank PDFs from Pandoc.
+- The field names on some types of PDF files were not being identified
+  correctly on the Utilities screen.
+
+## [0.3.33] - 2019-01-16
+### Changed
+- API calls can be authenticated with an `X-API-Key` cookie or HTTP
+  header.
+- API responses contain CORS-friendly HTTP headers.
+### Fixed
+- JSON error when running `ocr_file_in_background()`.
+- XML error when assembling DOCX files.
+
+## [0.3.32] - 2019-01-16
+### Changed
+- UI and HTML changes for accessibility.
+### Fixed
+- Timing of initialization of Google autocomplete fields resulted in
+  JavaScript error in some circumstances.
+- OneDrive synchronization errors due to changes in the Microsoft Graph API.
+
+## [0.3.31] - 2019-01-14
+### Changed
+- Additional information added to data representation of question.
+- HTML more standards-compliant for accessibility.
+### Fixed
+- Package update process was not detecting missing packages.
+- The watchdog's process terminations were causing unnecessary
+  internal server errors under high system load, mistaking a busy
+  Apache process for an out-of-control Apache process.  The threshold
+  has been adjusted.  The change will only take effect after a `docker
+  stop` and `docker start`.  Alternatively, `docker exec` into the
+  container and run `supervisorctl restart watchdog`.
+
+## [0.3.30] - 2019-01-05
+### Added
+- The `/api/login_url` API endpoint.
+- The `/api/user_info` API endpoint.
+### Changed
+- The `/api/user/new` API endpoint will now create a random password
+  if a password is not provided.
+### Fixed
+- The `/api/user/new` API endpoint used `email` when the correct
+  parameter is `username`.
+
+## [0.3.29] - 2019-01-03
+### Added
+- The `question_name` option for the POST method of the `/api/session`
+  API endpoint and the `set_session_variables()` function.
+### Fixed
+- Unicode error from `/api/secret`.
+
+## [0.3.28] - 2018-12-31
+### Added
+- The `accept` specifier for `datatype: file` fields.
+- The `create_user()` function.
+- The `/api/user/new` endpoint.
+
+## [0.3.27] - 2018-12-24
+### Changed
+- Table edit attribute names treated as "follow up" actions.
+
+## [0.3.26] - 2018-12-21
+### Changed
+- Reverted `reconsider()` to 0.3.24 version.
+
+## [0.3.25] - 2018-12-20
+### Changed
+- Exception raised if unsafe filename used for a `DAFile`.
+### Fixed
+- Problem with caching of stand-alone `attachment` blocks.
+
+## [0.3.24] - 2018-12-17
+### Added
+- The `inline` keyword parameter for the `url_for()` method.
+- The `describe()` method of the output of `date_difference()`.
+### Changed
+- The result of `date_difference()` when reduced to text now runs the
+  `describe()` method instead of stating the number of days.
+- The `space_to_underscore()` function now uses
+  `werkzeug.secure_filename()` and replaces more than just non-ASCII
+  characters and spaces.
+### Fixed
+- Error in `.export()` method of tables.
+
+## [0.3.23] - 2018-12-15
+### Added
+- The `get_question_data()` function.
+### Fixed
+- Error from Playground sidebar for interviews using `imports`.
+
+## [0.3.22] - 2018-12-14
+### Added
+- Insertion of PDF files into DOCX files.
+- Links in Playground sidebar to source code on GitHub.
+### Changed
+- Data representation of a question now includes plain attachment file
+  numbers.
+### Fixed
+- Not all thread local variables were reset before request.
+- Unicode error when exporting README.
+- Azure Blob storage missing content type.
+
+## [0.3.21] - 2018-12-10
+### Added
+- The `object labeler` option in `fields`.
+
+## [0.3.20] - 2018-12-08
+### Added
+- The `exclude_privileges` keyword parameter of the
+  `last_access_time()` function and related functions.
+### Changed
+- The `/api/user_list` API method and the `get_user_list()` function
+  now return a user's privileges under a dictionary key called
+  `privileges`.  Previously the key `roles` was used.
+### Fixed
+- The `update()` and `has_key()` methods of `DADict` did not work.
+- Multiple `template`s on a screen using iterators did not work
+  correctly.
+- Browser back button sometimes required two clicks to go back one
+  step.
+- Unhelpful error when uploading invalid file type to Wizard.
+- Temporary PDF files accumulating in `/tmp`.
+
+## [0.3.19] - 2018-12-02
+### Added
+- The `DAOrderedDict` class.
+### Changed
+- Protections against adding non-modules to Modules folder.
+- Keep memory of visited sections when the available sections change.
+### Fixed
+- Visiting `/user/sign-in` or `/user/register` while being signed in
+  will now redirect to the `auto resume interview`, if any.
+
+## [0.3.18] - 2018-11-30
+### Fixed
+- Unicode error in text to speech engine.
+
+## [0.3.17] - 2018-11-30
+### Added
+- The `.show(editable=False)` option for tables.
+- The `include_dict` option for `interview_list()`.
+- The `formatted_unit()` method for `Address`.
+### Changed
+- Icons on the User List page highlighting users with special
+  privileges.
+- Admin users cannot take away their own admin privilege.
+- Admin users cannot disable their own accounts.
+### Fixed
+- Validation error messages in admin pages were black when they should
+  have been red.
+- Typo in `.add_action()` method for `DADict()`.
+- Error during `.export()` because `pandas` erroneously requires a
+  nanosecond attribute in dates.
+- Error in `instanceName` guessing in the context of a function.
+
+## [0.3.16] - 2018-11-26
+### Added
+- The `export()` method of tables.
+
+## [0.3.15] - 2018-11-26
+### Added
+- The `overlay_pdf()` function.
+
+## [0.3.14] - 2018-11-25
+### Added
+- The `.filter()` method of the `DAList` class.
+- The `mmdc()` function for generating diagrams and flowcharts with
+  mermaid.  Requires system upgrade.
+
+## [0.3.13] - 2018-11-23
+### Added
+- "Sync and Run" button in the Playground.
+
+## [0.3.12] - 2018-11-22
+### Fixed
+- Problem with `value()` using a variable as an iterator.
+
+## [0.3.11] - 2018-11-15
+### Added
+- The `/api/playground` file upload feature.
+
+## [0.3.10] - 2018-11-13
+### Added
+- The `page after login` feature.
+
+## [0.3.9] - 2018-11-10
+### Added
+- The `allow for`, `required for`, `allow sms`, and `allow app`
+  options of `two factor authentication`.
+- The `progressive` option for `sections`.
+
+## [0.3.8] - 2018-11-04
+### Added
+- The `backup days` configuration directive.
+### Fixed
+- The `word()` function did not work on words with non-ASCII
+  characters.
+- Empty fields question skipping did not work where variable was
+  attribute of a non-existent object.
+- Interviews that changed the language changed the language of the Playground.
+
+## [0.3.7] - 2018-10-28
+### Fixed
+- Error importing `textstat`.
+
+## [0.3.6] - 2018-10-28
+### Changed
+- Validation is now applied in required fields so that spaces alone
+  cannot bypass validation.
+- Color of pressed button now "secondary" rather than "success" and
+  colors of non-pressed buttons now "light" instead of "secondary."
+### Fixed
+- Problem with editing lists where the `complete_attribute` is not
+  defined by a `code` block.
+- No proper error message when a non-text string is used as a variable
+  name in `fields`.
+- Problems with locking-related changes from 0.3.5.
+- Admin users were allowed to give `admin` privilege to users with
+  social logins.
+- Python error in cron.py.
+
+## [0.3.5] - 2018-10-23
+### Added
+- The `edit_url_only` and `delete_url_only` parameters to the
+  `item_actions()` methods.
+- The `url_only` parameter to the `add_action()` method.
+- The `url_ask()` and `action_button_html()` functions.
+### Changed
+- A `message` parameter to `add_action()` is now passed through
+  `word()`.
+- Removed the new feature from 0.3.3 where interview answers are saved
+  before a `leave`.
+- Different method of locking while copying playground modules.
+### Fixed
+- Percent signs in `number` fields may have avoided validation.
+- Database access for chat log not protected by locking.
+
+## [0.3.4] - 2018-10-20
+### Fixed
+- Links not appearing in the inline navigation bar.
+- Toggle button not present in the vertical navigation bar.
+
+## [0.3.3] - 2018-10-19
+### Added
+- The ability to set a `read only` attribute on a `table` to indicate
+  that some rows cannot be deleted or edited.
+### Changed
+- Editing a table will cause the definition of the `complete_element`
+  attribute, if any, to be recomputed after the `edit` attributes are
+  sought.
+- Interview answers saved before a `leave`.
+- Background task callbacks that raise exceptions will no longer save
+  interview answers.
+### Fixed
+- Dependencies not being properly scanned from `setup.py` files.
+- Review screen resume button that set variable had unicode instead of
+  boolean data type.
+- Text was not scanned for emojis unless `images` were defined or the
+  `default icons` directive was set.
+- The `get()` method of `DADict` did not work.
+- Random errors where dictionary cannot be retrieved (potential fix).
+- The `minimum_number` feature introduced in 0.3.2 did not work on
+  `table`s based on `DADict` objects.
+- Elements could not be added through `add_action()` when the list was
+  empty.
+- The `rows` directive of a table resulted in an error if the
+  expression used a compound operator (e.g., `+`).
+- Changes to fields made by remote user not reflected in observer window.
+- Back button did not work when remote controlling.
+- Updated deprecated pandas code in the machine learning module.
+
+## [0.3.2] - 2018-10-13
+### Changed
+- Using `table` with a `DADict` now sets `row_index` to the key and
+  `row_item` to the value, and `DADict`s can be edited using tables.
+- No delete buttons on a `table` when deletion would cause the number 
+  of items to fall below `minimum_number`.
+- The `edit` option on a `table` can now use reference indices as well
+  as attributes.
+- The default `message` for the `add_action()` method on a group is
+  "Add an item" if the group is empty.
+- Clicking on a navigable section header empties the action queue,
+  ensuring that clicking "Resume" puts the user back in the interview,
+  rather than the screen they saw before they clicked the header.
+### Added
+- The `delete buttons` option when using `edit` on a `table`.
+- The `only_if_empty` option on the `reset_gathered()` method.
+- The `slice` method of the `DADict` class.
+- The `re_gather` attribute of groups to `basic-questions.yml`.
+- The `follow up` option in a `review` block `fields`.
+- The `reconsider()` function.
+- The `preloaded modules` configuration directive.
+- The `action_button_html()` function.
+### Fixed
+- URL for restarting interview session conflicted with another URL
+  when user logged in.
+- `table`s could not appear inside of `review` blocks because they
+  were always undefined.
+- Navigable section headers not styled correctly.
+- One of two processes simultaneously loading the playground modules at
+  same time could encounter an empty directory.
+- Screen loads through `url_action_perform()` did not show the
+  spinner.
+- Some thread variables were not reset between requests.
+- The OCR background function did not work, so rolled back celery and
+  kombu to 4.1.0.
+
+## [0.3.1] - 2018-10-02
+### Changed
+- When a variable is force-asked or the goal of an action and a
+  `question` is not found, no error will be raised.  This facilitates
+  the use of optional follow-up questions in a `review` block.
+### Fixed
+- Aliased template variables generated pickle errors.
+
+## [0.3.0] - 2018-09-28
+### Changed
+- Upgraded OS from Debian stretch from Debian jessie.  Upgraded pandoc
+  to version 2.3.  LibreOffice upgraded to version in
+  stretch-backports.  A system upgrade is required to realize these
+  changes.
+- Setting a `minlength` on a `datatype: checkboxes` field turns off the
+  "None of the above" item.
+
+## [0.2.102] - 2018-09-27
+### Changed
+- LibreOffice upgraded to version in jessie-backports.
+### Added
+- Options for `new_session` and `exit_logout` under buttons,
+  `command()`, and `url_of()`.
+### Fixed
+- Logging in with e-mail and password where e-mail already used for a
+  social login generated an exception.
+
+## [0.2.101] - 2018-09-25
+### Changed
+- The `.copy_into()` method of `DAFile` now accepts `DAFile`,
+  `DAStaticFile`, `DAFileList`, and `DAFileCollection` objects as
+  the argument, as well as the direct file path of the other file.
+### Fixed
+- Problem with converting to PDF after `update references` for some
+  tables of contents.
+- The `.copy_into()` and `.from_url()` methods now update PDF and
+  image information after the file contents change.
+
+## [0.2.100] - 2018-09-23
+### Added
+- The `forget_result_of()` and `re_run_logic()` functions.
+- Additional test interviews.
+### Changed
+- `note` and `html` can now be used to insert text in the right
+  column, along side a field.
+### Fixed
+- The `minlength` and `maxlength` modifiers did not work on
+  `checkboxes`.
+- The `insert_docx_template()` function was not intercepting all
+  parameters of class `DAObject` and passing them as objects.
+- Too many line breaks in .docx address block.
+- Static file videos did not work.
+- Static file videos were static width.
+
+## [0.2.99] - 2018-09-19
+### Added
+- The `back button` and `back button label` modifiers.
+- The `show login` directive in interview `metadata`.
+
+## [0.2.98] - 2018-09-18
+### Fixed
+- Error in Word manifest XML file.
+
+## [0.2.97] - 2018-09-18
+### Added
+- Playground "Variables, etc." for the Word task pane.
+### Changed
+- It is no longer necessary to remove curly quotes from .docx Jinja2
+  code.  They will be converted to straight quotes before processing.
+### Fixed
+- Google Maps JavaScript was loading synchronously, which slowed down
+  loading.
+- A `choices` list could not contain a list of numeric, boolean,
+  or `NoneType` values.
+- `DAStaticFile`s could not be inserted into .docx templates.
+
+## [0.2.96] - 2018-09-12
+### Added
+- Integration between Microsoft OneDrive and the Playground.
+- The `debug` directive inside `features`.
+### Changed
+- Upgraded Font Awesome to 5.3.1.
+
+## [0.2.95] - 2018-09-08
+### Added
+- The `update references` setting on `attachment`s.
+
+## [0.2.94] - 2018-09-05
+### Added
+- The `redact()` function and `redact` option on `attachment`s.
+### Changed
+- The `template` and `table` blocks now become `DALazyTemplate`
+  objects rather than `DATemplate` objects.  Their contents are
+  evaluated at the time they are reduced to text, not at the time they
+  are created.
+### Fixed
+- Problem with `currency()` and other functions when used from a `docx
+  template file` where undefined variables did not raise exceptions.
+- The `create_new_interview()` function caused unnecessary 4 second delay.
+- Users with `user` privileges could not access API key management.
+- The `interview_url()` function was returning a URL based on how the
+  current request was made, rather than the actual URL for getting to
+  an interview.
+
+## [0.2.93] - 2018-08-31
+### Fixed
+- Problem with `DATemplate` variables with string indices.
+
+## [0.2.92] - 2018-08-27
+### Added
+- The `show progress bar percentage` feature.
+### Changed
+- The `background_response()` function can be called using
+  `background_response('refresh')` to refresh the user's screen.
+
+## [0.2.91] - 2018-08-25
+### Added
+- The `getField()` and `setField()` JavaScript functions.
+### Fixed
+- The `fields` version of `background_response()` could not set radio
+  buttons.
+
+## [0.2.90] - 2018-08-23
+### Fixed
+- Problem with checkboxes inside a `show if`.
+
+## [0.2.89] - 2018-08-20
+### Changed
+- The `variables_as_json()` function now accepts `include_internal` as
+  a keyword parameter.
+- The `variables_as_json()` function now produces pretty-printed JSON
+  output.
+- Only ordinary users will see flash messages about switching to a
+  different interview.
+### Fixed
+- Template and static file deletion in Playground.
+- Setting the instance name of items that are already in a list.
+- Non-mandatory questions were being marked as answered in the
+  internal dictionary.
+
+## [0.2.88] - 2018-08-20
+### Fixed
+- The recent version of WTForms is incompatible; set to 2.1.
+- The `simplify` parameter of `get_session_variables()` was fixed to `True`.
+
+## [0.2.87] - 2018-08-19
+### Changed
+- Moved interview HTML into a `<div>` to provide compatibility with
+  add-ons.
+
+## [0.2.86] - 2018-08-17
+### Added
+- The `js show if` and `js hide if` field modifiers.
+- The `val()` JavaScript function.
+- The `continue button field` feature.
+### Changed
+- Upgraded Font Awesome to 5.2.0.
+- Two `DAList`s added together will yield a `DAList`.
+### Fixed
+- `zip_file()` returned an empty archive when given a
+  `DAFileCollection`.
+
+## [0.2.85] - 2018-08-15
+### Fixed
+- Problem with screen reader flagging help text with Markdown
+  formatting as a defined term.
+- Problem with Internet Explorer passing through commas in numeric
+  values.
+
+## [0.2.84] - 2018-08-13
+### Changed
+- Word processing files and text files can now be included in
+  documents in the same way that images can.
+- Reducing a `DAFileCollection` to text no longer attempts to show all
+  versions in the collection, but only includes one.
+
+## [0.2.83] - 2018-08-11
+### Changed
+- Playground UI highlights most recently edited files.
+### Fixed
+- Writing to `DAFile`s.
+
+## [0.2.82] - 2018-08-08
+### Changed
+- Some exceptions raised by Jinja2 will now be accompanied by a
+  snippet of document context.
+### Added
+- Initial support for Travis CI deployment.
+- Method `.slurp()` for `DAFileList`.
+### Fixed
+- Setting of text fields to `None` when the value is the string
+  `"None"`.
+- Vertical alignment of section labels in horizontal mode.
+- User text causing Pandoc to enter LaTeX math mode.
+- Reconstruction of certain types of bookmarks after adding signature
+  to PDF.
+- Addresses that normalize without a street address.
+
 ## [0.2.81] - 2018-07-31
 ### Changed
 - Interviews are now served from `/interview` rather than `/`.  This
@@ -614,9 +1395,9 @@
 
 ## [0.2.13] - 2017-12-24
 ### Added
-- Ability to change the `password complexity` requirements in the 
+- Ability to change the `password complexity` requirements in the
   Configuration.
-- Ability to control whether registering users must retype their 
+- Ability to control whether registering users must retype their
   passwords.
 
 ## [0.2.12] - 2017-12-24
@@ -663,7 +1444,7 @@
 - Error when uploading Zip file to Playground packages folder.
 - Problem setting boolean character of yesno variables that are
   specified using brackets.
-- Problem with referring to `get_url_from_file_reference()` outside of 
+- Problem with referring to `get_url_from_file_reference()` outside of
   request context.
 
 ## [0.2.4] - 2017-12-06
@@ -693,12 +1474,12 @@
 
 ## [0.2.1] - 2017-11-30
 ### Changed
-- The hard-coded limit on JSON nesting depth, which was mentioned 
+- The hard-coded limit on JSON nesting depth, which was mentioned
   in the 0.2.0 changes, has been changed from 6 to 20.
 ### Fixed
-- Apache could not start unless Docker container started with a 
+- Apache could not start unless Docker container started with a
   `DAHOSTNAME`.
-- GitHub push using GitHub integration failed because of an SSH 
+- GitHub push using GitHub integration failed because of an SSH
   issue.
 
 ## [0.2.0] - 2017-11-29
@@ -706,7 +1487,7 @@
 - The `logo` option of `set_title()` and `metadata`.
 ### Changed
 - The `all_variables()` and `variables_as_json()` functions now
-  contain a limitation on nesting depth.  The limit is hard-coded at 
+  contain a limitation on nesting depth.  The limit is hard-coded at
   6 levels, after which values will be "null."  This is to prevent
   exceptions being triggered by circular references.
 - Setting Google Drive Synchronization folder to "Do not link" will
@@ -736,10 +1517,10 @@
 ### Changed
 - Multiple choice questions in `fields` will set boolean `True` or
   `False` if those are the only options.
-- Additional headers are set to enable cross-site resource sharing 
+- Additional headers are set to enable cross-site resource sharing
   if the CROSSSITEDOMAIN variable is set.
 - Apache configuration files in Docker are configured differently;
-  existing site configuration files will not be overwritten and 
+  existing site configuration files will not be overwritten and
   configuration options are now implemented as Apache variables.
 - `DAList` objects now work with the `+` operator; a regular list can
   be added to a `DAList` but not the other way around.
@@ -846,7 +1627,7 @@
 
 ## [0.1.86] - 2017-11-01
 ### Added
-- `decoration size`, `decoration units`, `button icon size`, 
+- `decoration size`, `decoration units`, `button icon size`,
   `button icon units`, and `button size` configuration options.
 - `encode_name()` and `decode_name()`.
 ### Changed
@@ -857,7 +1638,7 @@
 
 ## [0.1.85] - 2017-10-29
 ### Added
-- Option for `google maps api key` in the `google` section of the 
+- Option for `google maps api key` in the `google` section of the
   configuration.
 ### Changed
 - A Google API key is now required for using `map_of()`.
@@ -907,7 +1688,7 @@
 ## [0.1.79] - 2017-10-23
 ### Fixed
 - PDF page retrieval index error.
-- File permissions issue in S3 that prevents server restart.  S3 users 
+- File permissions issue in S3 that prevents server restart.  S3 users
   must upgrade the Docker image.
 - Incorrect timestamps when downloading from persistent cloud storage.
 
@@ -925,7 +1706,7 @@
   used as a literal `group_id`.  Rather, an argument `'fruit'` it will
   be converted into a group_id of the form
   `docassemble.packagename:data/sources/ml-interviewname.json:fruit`.
-  You can still set a literal `group_id` using the keyword parameter 
+  You can still set a literal `group_id` using the keyword parameter
   `group_id`.
 - When an `initial_file` is given to a `MachineLearner` object, two
   different formats can be used: an array, or a dictionary of arrays.
@@ -960,7 +1741,7 @@
 - `DAStaticFile` object.
 - `set_data()` and `get_data()` methods for `DARedis`.
 ### Fixed
-- `DAFile` initialize function now handles keyword arguments as 
+- `DAFile` initialize function now handles keyword arguments as
   advertised.
 
 ## [0.1.74] - 2017-10-15
@@ -1185,7 +1966,7 @@
   will now open them in a new browser tab rather than offering them
   as attachment downloads.
 ### Changed
-- In Google Drive synchronization, .tmp and .gdoc files are now 
+- In Google Drive synchronization, .tmp and .gdoc files are now
   ignored.
 ### Fixed
 - Spinner did not appear on signature pages.
@@ -1207,7 +1988,7 @@
 - Methods `.true_values()` and `.false_values()` for `DADict`.
 ### Fixed
 - Multiple choice questions where list of selections is empty.
-- SMS interface for multiple choice questions where list of 
+- SMS interface for multiple choice questions where list of
   selections is empty.
 
 ## [0.1.45] - 2017-08-31

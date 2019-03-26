@@ -7,6 +7,7 @@ from wtforms.validators import DataRequired, Email, Optional
 from wtforms.widgets import PasswordInput
 from docassemble.base.functions import word
 from docassemble.base.config import daconfig
+from flask_login import current_user
 
 try:
     import ldap
@@ -21,11 +22,8 @@ def fix_nickname(form, field):
 
 class MySignInForm(LoginForm):
     def validate(self):
-        #import redis
         from docassemble.webapp.daredis import r
-        #import docassemble.base.util
         from flask import request, abort
-        #r = redis.StrictRedis(host=docassemble.base.util.redis_server, db=0)
         key = 'da:failedlogin:ip:' + str(request.remote_addr)
         failed_attempts = r.get(key)
         if failed_attempts is not None and int(failed_attempts) > daconfig['attempt limit']:
@@ -61,7 +59,29 @@ class MySignInForm(LoginForm):
                 connect.unbind_s()
                 result = super(MySignInForm, self).validate()
         else:
+            from flask import current_app
+            user_manager = current_app.user_manager
+            user, user_email = user_manager.find_user_by_email(self.email.data)
+            if user is None:
+                return False
+            if user and (user.password is None or (user.social_id is not None and not user.social_id.startswith('local$'))):
+                self.email.errors = list(self.email.errors)
+                if user.social_id.startswith('google$'):
+                    self.email.errors.append(word("You need to log in with Google."))
+                elif user.social_id.startswith('azure$'):
+                    self.email.errors.append(word("You need to log in with Azure."))
+                elif user.social_id.startswith('auth0$'):
+                    self.email.errors.append(word("You need to log in with Auth0."))
+                elif user.social_id.startswith('twitter$'):
+                    self.email.errors.append(word("You need to log in with Twitter."))
+                elif user.social_id.startswith('facebook$'):
+                    self.email.errors.append(word("You need to log in with Facebook."))
+                else:
+                    self.email.errors.append(word("You cannot log in this way."))
+                return False
+            #sys.stderr.write("Trying super validate\n")
             result = super(MySignInForm, self).validate()
+            #sys.stderr.write("Super validate response was " + repr(result) + "\n")
         if result is False:
             r.incr(key)
             r.expire(key, daconfig['ban period'])
@@ -113,15 +133,26 @@ class UserProfileForm(FlaskForm):
     language = StringField(word('Language'), [validators.Length(min=0, max=64)])
     timezone = SelectField(word('Time Zone'))
     pypi_username = StringField(word('PyPI Username'))
-    pypi_password = StringField(word('PyPI Password'), widget=PasswordInput(hide_value=False))
+    pypi_password = StringField(word('PyPI Password'))
     confirmed_at = DateField(word('Confirmation Date'))
     submit = SubmitField(word('Save'))
+    cancel = SubmitField(word('Cancel'))
 
 class EditUserProfileForm(UserProfileForm):
     email = StringField(word('E-mail'), validators=[Email(word('Must be a valid e-mail address')), DataRequired(word('E-mail is required'))])
     role_id = SelectMultipleField(word('Privileges'), coerce=int)
     active = BooleanField(word('Active'))
     uses_mfa = BooleanField(word('Uses two-factor authentication'))
+    def validate(self, user_id, admin_id):
+        rv = UserProfileForm.validate(self)
+        if not rv:
+            return False
+        if current_user.id == user_id:
+            if admin_id not in self.role_id.data:
+                self.role_id.errors.append(word('You cannot take away your own admin privilege.'))
+                return False
+            self.active.data = True
+        return True
 
 class PhoneUserProfileForm(UserProfileForm):
     def validate(self):
@@ -168,13 +199,10 @@ class PhoneLoginVerifyForm(FlaskForm):
     verification_code = StringField(word('Verification code'), [validators.Length(min=daconfig['verification code digits'], max=daconfig['verification code digits'])])
     submit = SubmitField(word('Verify'))
     def validate(self):
-        #import redis
-        #import docassemble.base.util
         from docassemble.webapp.daredis import r
         from docassemble.base.logger import logmessage
         from flask import request, abort
         result = True
-        #r = redis.StrictRedis(host=docassemble.base.util.redis_server, db=0)
         key = 'da:failedlogin:ip:' + str(request.remote_addr)
         failed_attempts = r.get(key)
         if failed_attempts is not None and int(failed_attempts) > daconfig['attempt limit']:
@@ -187,8 +215,8 @@ class PhoneLoginVerifyForm(FlaskForm):
         if verification_code is None:
             logmessage("Verification code with " + str(verification_key) + " is None")
             result = False
-        elif verification_code != supplied_verification_code:
-            logmessage("Verification code with " + str(verification_key) + " which is " + str(verification_code) + " does not match supplied code, which is " + str(self.verification_code.data))
+        elif verification_code.decode() != supplied_verification_code:
+            logmessage("Verification code with " + str(verification_key) + " which is " + str(verification_code.decode()) + " does not match supplied code, which is " + str(self.verification_code.data))
             result = False
         else:
             logmessage("Code matched")

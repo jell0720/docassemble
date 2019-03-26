@@ -35,6 +35,7 @@ oauth:
     id: ba45316c5951436328bc
     secret: 68e37cebd352f1ea36b6147cd52ff661c413f4b1
 secretkey: {{DASECRETKEY}}
+backup days: {{DABACKUPDAYS}}
 default title: docassemble
 default short title: doc
 mail:
@@ -43,7 +44,7 @@ mail:
   server: localhost
   default sender: '"Administrator" <no-reply@example.com>'
 server administrator email: {{SERVERADMIN}}
-default interview: docassemble.demo:data/questions/questions.yml
+default interview: docassemble.base:data/questions/default-interview.yml
 language: en
 locale: en_US.utf8
 os locale: {{LOCALE}}
@@ -79,3 +80,4 @@ external hostname: {{DAHOSTNAME}}
 root: {{POSTURLROOT}}
 words:
   - docassemble.base:data/sources/us-words.yml
+allow non-idempotent questions: False

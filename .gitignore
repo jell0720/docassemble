@@ -10,6 +10,7 @@ docassemble_webapp/build
 *.egg-info
 docassemble/dist
 docassemble_base/dist
+docassemble_base/docassemble/base/markdown_docx.py
 docassemble_demo/dist
 docassemble_webapp/dist
 make_session_store.py
@@ -24,6 +25,8 @@ www-compile.sh
 compile2.sh
 www-compile2.sh
 requirements.txt
+requirements3.txt
+requirements3.txt
 full-requirements.txt
 taskdefinition.json
 TODO.md
@@ -46,3 +49,4 @@ tests/ghostdriver.log
 tests/features/Temp.feature
 tests/features/Screenshots.feature
 fix-seq.sql
+rtftest.py

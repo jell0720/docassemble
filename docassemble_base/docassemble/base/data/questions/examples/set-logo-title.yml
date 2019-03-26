@@ -1,18 +1,15 @@
 metadata:
   title: Logo title
-  documentation: "https://docassemble.org/docs/functions.html#set_title"
-  example start: 2
-  example end: 3
----
-modules:
-  - docassemble.base.util
+  documentation: "https://docassemble.org/docs/functions.html#set_parts"
+  example start: 1
+  example end: 2
 ---
 objects:
   - company_logo: DAStaticFile.using(filename='example-inc.svg')
 ---
 mandatory: True
 code: |
-  set_title(title='Example Inc.', logo='<img src="' + company_logo.url_for() + '" style="height: 20px; width: 157px;">')
+  set_parts(title='Example Inc.', logo='<img src="' + company_logo.url_for() + '" style="height: 20px; width: 157px;">')
 ---
 question: |
   Welcome to the Example Inc. interview!

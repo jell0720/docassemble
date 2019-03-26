@@ -1,11 +1,8 @@
 metadata:
   title: Using redis
-  example start: 2
-  example end: 4
+  example start: 1
+  example end: 3
   documentation: "https://docassemble.org/docs/functions.html#redis"
----
-modules:
-  - docassemble.base.util
 ---
 objects:
   r: DARedis
@@ -22,4 +19,4 @@ question: |
 subquestion: |
   The key is `${ key }`.
   
-  The value is "${ r.get(key) }".
+  The value is "${ r.get(key).decode() }".

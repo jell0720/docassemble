@@ -2,27 +2,40 @@
 
 export HOME=/root
 export DA_ROOT="${DA_ROOT:-/usr/share/docassemble}"
-export DA_ACTIVATE="${DA_PYTHON:-${DA_ROOT}/local}/bin/activate"
+export DAPYTHONVERSION="${DAPYTHONVERSION:-2}"
+if [ "${DAPYTHONVERSION}" == "2" ]; then
+    export DA_DEFAULT_LOCAL="local"
+else
+    export DA_DEFAULT_LOCAL="local3.5"
+fi
+export DA_ACTIVATE="${DA_PYTHON:-${DA_ROOT}/${DA_DEFAULT_LOCAL}}/bin/activate"
+
 echo "Activating with ${DA_ACTIVATE}"
-source $DA_ACTIVATE
+
+source "${DA_ACTIVATE}"
 
 export DA_CONFIG_FILE_DIST="${DA_CONFIG_FILE_DIST:-${DA_ROOT}/config/config.yml.dist}"
 export DA_CONFIG_FILE="${DA_CONFIG:-${DA_ROOT}/config/config.yml}"
 export CONTAINERROLE=":${CONTAINERROLE:-all}:"
 
-if pg_isready -q; then
-    PGRUNNING=true
-else
-    PGRUNNING=false
-fi
+echo "1" >&2
 
 export DEBIAN_FRONTEND=noninteractive
 apt-get clean &> /dev/null
 apt-get -q -y update &> /dev/null
-apt-get -q -y install libsasl2-dev libldap2-dev &> /dev/null
-su -c "source $DA_ACTIVATE && pip install python-ldap &> /dev/null" www-data
 
-# echo "1"
+pandoc --help &> /dev/null || apt-get -q -y install pandoc
+
+PANDOC_VERSION=`pandoc --version | head -n1`
+
+if [ "${PANDOC_VERSION}" != "pandoc 2.7" ]; then
+   cd /tmp \
+   && wget -q https://github.com/jgm/pandoc/releases/download/2.7/pandoc-2.7-1-amd64.deb \
+   && dpkg -i pandoc-2.7-1-amd64.deb \
+   && rm pandoc-2.7-1-amd64.deb
+fi
+
+echo "2" >&2
 
 if [ -f /var/run/apache2/apache2.pid ]; then
     APACHE_PID=$(</var/run/apache2/apache2.pid)
@@ -36,7 +49,7 @@ else
     APACHERUNNING=false
 fi
 
-# echo "2"
+echo "3" >&2
 
 if redis-cli ping &> /dev/null; then
     REDISRUNNING=true
@@ -44,15 +57,7 @@ else
     REDISRUNNING=false
 fi
 
-# echo "3"
-
-if rabbitmqctl status &> /dev/null; then
-    RABBITMQRUNNING=true
-else
-    RABBITMQRUNNING=false
-fi
-
-# echo "4"
+echo "4" >&2
 
 if [ -f /var/run/crond.pid ]; then
     CRON_PID=$(</var/run/crond.pid)
@@ -66,7 +71,7 @@ else
     CRONRUNNING=false
 fi
 
-# echo "5"
+echo "5" >&2
 
 if [ "${USEHTTPS:-false}" == "false" ] && [ "${BEHINDHTTPSLOADBALANCER:-false}" == "false" ]; then
     URLROOT="http:\\/\\/"
@@ -74,7 +79,7 @@ else
     URLROOT="https:\\/\\/"
 fi
 
-# echo "6"
+echo "6" >&2
 
 if [ "${DAHOSTNAME:-none}" != "none" ]; then
     URLROOT="${URLROOT}${DAHOSTNAME}"
@@ -87,26 +92,26 @@ else
     URLROOT="${URLROOT}${PUBLIC_HOSTNAME}"
 fi
 
-# echo "7"
+echo "7" >&2
 
 if [ "${S3ENABLE:-null}" == "null" ] && [ "${S3BUCKET:-null}" != "null" ]; then
     export S3ENABLE=true
 fi
 
-# echo "8"
+echo "8" >&2
 
 if [ "${S3ENABLE:-null}" == "true" ] && [ "${S3BUCKET:-null}" != "null" ] && [ "${S3ACCESSKEY:-null}" != "null" ] && [ "${S3SECRETACCESSKEY:-null}" != "null" ]; then
     export AWS_ACCESS_KEY_ID=$S3ACCESSKEY
     export AWS_SECRET_ACCESS_KEY=$S3SECRETACCESSKEY
 fi
 
-# echo "9"
+echo "9" >&2
 
 if [ "${AZUREENABLE:-null}" == "null" ] && [ "${AZUREACCOUNTNAME:-null}" != "null" ] && [ "${AZUREACCOUNTKEY:-null}" != "null" ] && [ "${AZURECONTAINER:-null}" != "null" ]; then
     export AZUREENABLE=true
 fi
 
-# echo "10"
+echo "10" >&2
 
 if [ "${S3ENABLE:-false}" == "true" ] && [[ $CONTAINERROLE =~ .*:(web):.* ]] && [[ $(s3cmd ls s3://${S3BUCKET}/hostname-rabbitmq) ]] && [[ $(s3cmd ls s3://${S3BUCKET}/ip-rabbitmq) ]]; then
     TEMPKEYFILE=`mktemp`
@@ -121,14 +126,14 @@ if [ "${S3ENABLE:-false}" == "true" ] && [[ $CONTAINERROLE =~ .*:(web):.* ]] && 
     echo "$IPRABBITMQ $HOSTNAMERABBITMQ" >> /etc/hosts
 fi
 
-# echo "11"
+echo "11" >&2
 
 if [ "${AZUREENABLE:-false}" == "true" ]; then
     echo "Initializing azure" >&2
     blob-cmd -f -v add-account "${AZUREACCOUNTNAME}" "${AZUREACCOUNTKEY}"
 fi
 
-# echo "12"
+echo "12" >&2
 
 if [ "${AZUREENABLE:-false}" == "true" ] && [[ $CONTAINERROLE =~ .*:(web):.* ]] && [[ $(python -m docassemble.webapp.list-cloud hostname-rabbitmq) ]] && [[ $(python -m docassemble.webapp.list-cloud ip-rabbitmq) ]]; then
     TEMPKEYFILE=`mktemp`
@@ -145,7 +150,7 @@ if [ "${AZUREENABLE:-false}" == "true" ] && [[ $CONTAINERROLE =~ .*:(web):.* ]] 
     echo "$IPRABBITMQ $HOSTNAMERABBITMQ" >> /etc/hosts
 fi
 
-# echo "13"
+echo "13" >&2
 
 if [ "${S3ENABLE:-false}" == "true" ]; then
     if [[ $CONTAINERROLE =~ .*:(all|web):.* ]] && [[ $(s3cmd ls s3://${S3BUCKET}/letsencrypt.tar.gz) ]]; then
@@ -245,11 +250,11 @@ else
     fi
 fi
 
-# echo "14"
+echo "14" >&2
 
 DEFAULT_SECRET=$(python -m docassemble.base.generate_key)
 
-# echo "15"
+echo "15" >&2
 
 if [ ! -f $DA_CONFIG_FILE ]; then
     sed -e 's@{{DBPREFIX}}@'"${DBPREFIX:-postgresql+psycopg2:\/\/}"'@' \
@@ -268,6 +273,7 @@ if [ ! -f $DA_CONFIG_FILE ]; then
 	-e 's/{{AZUREACCOUNTNAME}}/'"${AZUREACCOUNTNAME:-null}"'/' \
 	-e 's@{{AZUREACCOUNTKEY}}@'"${AZUREACCOUNTKEY:-null}"'@' \
 	-e 's/{{AZURECONTAINER}}/'"${AZURECONTAINER:-null}"'/' \
+	-e 's/{{DABACKUPDAYS}}/'"${DABACKUPDAYS:-14}"'/' \
 	-e 's@{{REDIS}}@'"${REDIS:-null}"'@' \
 	-e 's#{{RABBITMQ}}#'"${RABBITMQ:-null}"'#' \
 	-e 's@{{TIMEZONE}}@'"${TIMEZONE:-null}"'@' \
@@ -287,11 +293,11 @@ if [ ! -f $DA_CONFIG_FILE ]; then
 fi
 chown www-data.www-data $DA_CONFIG_FILE
 
-# echo "16"
+echo "16" >&2
 
 source /dev/stdin < <(su -c "source $DA_ACTIVATE && python -m docassemble.base.read_config $DA_CONFIG_FILE" www-data)
 
-# echo "17"
+echo "17" >&2
 
 if [ "${S3ENABLE:-false}" == "true" ] && [[ ! $(s3cmd ls s3://${S3BUCKET}/config.yml) ]]; then
     s3cmd -q put $DA_CONFIG_FILE s3://${S3BUCKET}/config.yml
@@ -316,21 +322,21 @@ if [ "${S3ENABLE:-false}" == "true" ] && [[ ! $(s3cmd ls s3://${S3BUCKET}/files)
 	done
     fi
 fi
-# echo "18"
+echo "18" >&2
 
 if [ "${AZUREENABLE:-false}" == "true" ]; then
     echo "Initializing azure" >&2
     blob-cmd -f -v add-account "${AZUREACCOUNTNAME}" "${AZUREACCOUNTKEY}"
 fi
 
-# echo "19"
+echo "19" >&2
 
 if [ "${AZUREENABLE:-false}" == "true" ] && [[ ! $(python -m docassemble.webapp.list-cloud config.yml) ]]; then
     echo "Saving config" >&2
     blob-cmd -f cp $DA_CONFIG_FILE "blob://${AZUREACCOUNTNAME}/${AZURECONTAINER}/config.yml"
 fi
 
-# echo "19.5"
+echo "19.5" >&2
 
 if [ "${AZUREENABLE:-false}" == "true" ] && [[ ! $(python -m docassemble.webapp.list-cloud files) ]]; then
     if [ -d ${DA_ROOT}/files ]; then
@@ -355,7 +361,7 @@ if [ "${AZUREENABLE:-false}" == "true" ] && [[ ! $(python -m docassemble.webapp.
     fi
 fi
 
-# echo "20"
+echo "20" >&2
 
 if [ "${EC2:-false}" == "true" ]; then
     export LOCAL_HOSTNAME=`curl -s http://169.254.169.254/latest/meta-data/local-hostname`
@@ -365,13 +371,13 @@ else
     export PUBLIC_HOSTNAME=$LOCAL_HOSTNAME
 fi
 
-# echo "21"
+echo "21" >&2
 
 if [ "${DAHOSTNAME:-none}" == "none" ]; then
     export DAHOSTNAME=$PUBLIC_HOSTNAME
 fi
 
-# echo "22"
+echo "22" >&2
 
 if [[ $CONTAINERROLE =~ .*:(all|web|log):.* ]]; then
     a2dissite -q 000-default &> /dev/null
@@ -401,20 +407,22 @@ if [[ $CONTAINERROLE =~ .*:(all|web|log):.* ]]; then
     a2ensite docassemble-http
 fi
 
-# echo "23"
+echo "23" >&2
 
 if [ "${LOCALE:-undefined}" == "undefined" ]; then
     LOCALE="en_US.UTF-8 UTF-8"
 fi
 
-# echo "24"
+echo "24" >&2
 
 set -- $LOCALE
 DA_LANGUAGE=$1
+export LANG=$1
+
 grep -q "^$LOCALE" /etc/locale.gen || { echo $LOCALE >> /etc/locale.gen && locale-gen ; }
 update-locale LANG=$DA_LANGUAGE
 
-# echo "25"
+echo "25" >&2
 
 if [ -n "$OTHERLOCALES" ]; then
     NEWLOCALE=false
@@ -426,7 +434,7 @@ if [ -n "$OTHERLOCALES" ]; then
     fi
 fi
 
-# echo "26"
+echo "26" >&2
 
 if [ -n "$PACKAGES" ]; then
     for PACKAGE in "${PACKAGES[@]}"; do
@@ -434,20 +442,34 @@ if [ -n "$PACKAGES" ]; then
     done
 fi
 
-# echo "27"
+echo "26.5" >&2
+
+if [ -n "$PYTHONPACKAGES" ]; then
+    for PACKAGE in "${PYTHONPACKAGES[@]}"; do
+        su -c "source $DA_ACTIVATE && pip install $PACKAGE" www-data
+    done
+fi
+
+echo "27" >&2
 
 if [ "${TIMEZONE:-undefined}" != "undefined" ]; then
     echo $TIMEZONE > /etc/timezone
     dpkg-reconfigure -f noninteractive tzdata
 fi
 
-# echo "28"
+echo "28" >&2
 
 if [ "${S3ENABLE:-false}" == "true" ] || [ "${AZUREENABLE:-false}" == "true" ]; then
     su -c "source $DA_ACTIVATE && python -m docassemble.webapp.cloud_register $DA_CONFIG_FILE" www-data
 fi
 
-# echo "29"
+echo "29" >&2
+
+if pg_isready -q; then
+    PGRUNNING=true
+else
+    PGRUNNING=false
+fi
 
 if [[ $CONTAINERROLE =~ .*:(all|sql):.* ]] && [ "$PGRUNNING" = false ] && [ "$DBTYPE" == "postgresql" ]; then
     supervisorctl --serverurl http://localhost:9001 start postgres || exit 1
@@ -506,7 +528,7 @@ if [ -f /etc/syslog-ng/syslog-ng.conf ] && [ ! -f ${DA_ROOT}/webapp/syslog-ng-or
     cp /etc/syslog-ng/syslog-ng.conf ${DA_ROOT}/webapp/syslog-ng-orig.conf
 fi
 
-# echo "32" >&2
+echo "32" >&2
 
 OTHERLOGSERVER=false
 
@@ -516,19 +538,19 @@ if [[ $CONTAINERROLE =~ .*:(web|celery):.* ]]; then
     fi
 fi
 
-# echo "33" >&2
+echo "33" >&2
 
 if [[ $CONTAINERROLE =~ .*:(log):.* ]] || [ "${LOGSERVER:-undefined}" == "null" ]; then
     OTHERLOGSERVER=false
 fi
 
-# echo "34" >&2
+echo "34" >&2
 
 if [ "$OTHERLOGSERVER" = false ] && [ -f ${LOGDIRECTORY:-${DA_ROOT}/log}/docassemble.log ]; then
     chown www-data.www-data ${LOGDIRECTORY:-${DA_ROOT}/log}/docassemble.log
 fi
 
-# echo "35" >&2
+echo "35" >&2
 
 if [[ $CONTAINERROLE =~ .*:(log):.* ]] || [ "$OTHERLOGSERVER" = true ]; then
     if [ -d /etc/syslog-ng ]; then
@@ -551,13 +573,19 @@ fi
 
 echo "37" >&2
 
-if [[ $CONTAINERROLE =~ .*:(all|rabbitmq):.* ]] && [ "$RABBITMQRUNNING" = false ]; then
-    supervisorctl --serverurl http://localhost:9001 start rabbitmq
-fi
+su -c "source $DA_ACTIVATE && python -m docassemble.webapp.update $DA_CONFIG_FILE" www-data || exit 1
 
 echo "38" >&2
 
-su -c "source $DA_ACTIVATE && python -m docassemble.webapp.update $DA_CONFIG_FILE" www-data || exit 1
+if rabbitmqctl status &> /dev/null; then
+    RABBITMQRUNNING=true
+else
+    RABBITMQRUNNING=false
+fi
+
+if [[ $CONTAINERROLE =~ .*:(all|rabbitmq):.* ]] && [ "$RABBITMQRUNNING" = false ]; then
+    supervisorctl --serverurl http://localhost:9001 start rabbitmq
+fi
 
 echo "39" >&2
 
@@ -601,6 +629,26 @@ python -m docassemble.webapp.install_certs $DA_CONFIG_FILE || exit 1
 echo "43" >&2
 
 if [[ $CONTAINERROLE =~ .*:(all|web):.* ]] && [ "$APACHERUNNING" = false ]; then
+    if [ "${DAPYTHONMANUAL:-0}" == "0" ]; then
+	if [ "${DAPYTHONVERSION}" == "2" ]; then
+	    WSGI_VERSION=`apt-cache policy libapache2-mod-wsgi | grep '^  Installed:' | awk '{print $2}'`
+	    if [ "${WSGI_VERSION}" != '4.3.0-1' ]; then
+		cd /tmp && wget -q http://http.us.debian.org/debian/pool/main/m/mod-wsgi/libapache2-mod-wsgi_4.3.0-1_amd64.deb && dpkg -i libapache2-mod-wsgi_4.3.0-1_amd64.deb && rm libapache2-mod-wsgi_4.3.0-1_amd64.deb
+	    fi
+	else
+	    WSGI_VERSION=`apt-cache policy libapache2-mod-wsgi-py3 | grep '^  Installed:' | awk '{print $2}'`
+	    if [ "${WSGI_VERSION}" != '4.5.11-1' ]; then
+		apt-get -q -y install libapache2-mod-wsgi-py3 &> /dev/null
+	    fi
+	fi
+    fi
+
+    if [ "${DAPYTHONMANUAL:-0}" == "0" ]; then
+	a2enmod wsgi &> /dev/null
+    else
+	a2dismod wsgi &> /dev/null
+    fi
+
     if [ "${WWWUID:-none}" != "none" ] && [ "${WWWGID:-none}" != "none" ] && [ `id -u www-data` != $WWWUID ]; then
 	OLDUID=`id -u www-data`
 	OLDGID=`id -g www-data`
@@ -626,7 +674,12 @@ if [[ $CONTAINERROLE =~ .*:(all|web):.* ]] && [ "$APACHERUNNING" = false ]; then
 	a2dismod remoteip
 	a2disconf docassemble-behindlb
     fi
-    echo -e "# This file is automatically generated\nWSGIPythonHome ${DA_PYTHON:-${DA_ROOT}/local}\nTimeout ${DATIMEOUT:-60}\nDefine DAHOSTNAME ${DAHOSTNAME}\nDefine DAPOSTURLROOT ${POSTURLROOT}\nDefine DAWSGIROOT ${WSGIROOT}\nDefine DASERVERADMIN ${SERVERADMIN}" > /etc/apache2/conf-available/docassemble.conf
+    echo -e "# This file is automatically generated" > /etc/apache2/conf-available/docassemble.conf
+    if [ "${DAPYTHONMANUAL:-0}" == "3" ]; then
+	echo -e "LoadModule wsgi_module ${DA_PYTHON:-${DA_ROOT}/${DA_DEFAULT_LOCAL}}/lib/python3.5/site-packages/mod_wsgi/server/mod_wsgi-py35.cpython-35m-x86_64-linux-gnu.so" >> /etc/apache2/conf-available/docassemble.conf
+    fi
+    echo -e "WSGIPythonHome ${DA_PYTHON:-${DA_ROOT}/${DA_DEFAULT_LOCAL}}" >> /etc/apache2/conf-available/docassemble.conf
+    echo -e "Timeout ${DATIMEOUT:-60}\nDefine DAHOSTNAME ${DAHOSTNAME}\nDefine DAPOSTURLROOT ${POSTURLROOT}\nDefine DAWSGIROOT ${WSGIROOT}\nDefine DASERVERADMIN ${SERVERADMIN}" >> /etc/apache2/conf-available/docassemble.conf
     if [ -n "${CROSSSITEDOMAIN}" ]; then
 	echo "Define DACROSSSITEDOMAIN ${CROSSSITEDOMAIN}" >> /etc/apache2/conf-available/docassemble.conf
     fi
@@ -673,7 +726,7 @@ if [[ $CONTAINERROLE =~ .*:(all|web):.* ]] && [ "$APACHERUNNING" = false ]; then
 	    rm -f /tmp/letsencrypt.tar.gz
 	    if [ -d etc/letsencrypt ]; then
 		tar -zcf /tmp/letsencrypt.tar.gz etc/letsencrypt
-		echo "Saving let's encrypt" >&2
+		echo "Saving lets encrypt" >&2
 		blob-cmd -f cp /tmp/letsencrypt.tar.gz "blob://${AZUREACCOUNTNAME}/${AZURECONTAINER}/letsencrypt.tar.gz"
 		rm -f /tmp/letsencrypt.tar.gz
 	    fi
@@ -737,7 +790,7 @@ echo "49" >&2
 
 if [ "$CRONRUNNING" = false ]; then
     if ! grep -q '^CONTAINERROLE' /etc/crontab; then
-	bash -c "set | grep -e '^CONTAINERROLE=' -e '^DA_PYTHON=' -e '^DA_CONFIG=' -e '^DA_ROOT='; cat /etc/crontab" > /tmp/crontab && cat /tmp/crontab > /etc/crontab && rm -f /tmp/crontab
+	bash -c "set | grep -e '^CONTAINERROLE=' -e '^DA_PYTHON=' -e '^DA_CONFIG=' -e '^DA_ROOT=' -e '^DAPYTHONVERSION='; cat /etc/crontab" > /tmp/crontab && cat /tmp/crontab > /etc/crontab && rm -f /tmp/crontab
     fi
     supervisorctl --serverurl http://localhost:9001 start cron
 fi

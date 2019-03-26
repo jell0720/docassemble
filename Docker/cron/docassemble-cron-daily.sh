@@ -6,6 +6,9 @@ export DA_CONFIG_FILE="${DA_CONFIG:-${DA_ROOT}/config/config.yml}"
 export CONTAINERROLE=":${CONTAINERROLE:-all}:"
 source /dev/stdin < <(su -c "source $DA_ACTIVATE && python -m docassemble.base.read_config $DA_CONFIG_FILE" www-data)
 
+set -- $LOCALE
+export LANG=$1
+
 if [ "${S3ENABLE:-null}" == "null" ] && [ "${S3BUCKET:-null}" != "null" ]; then
     export S3ENABLE=true
 fi
@@ -18,10 +21,6 @@ fi
 if [ "${AZUREENABLE:-null}" == "null" ] && [ "${AZUREACCOUNTNAME:-null}" != "null" ] && [ "${AZURECONTAINER:-null}" != "null" ]; then
     export AZUREENABLE=true
     blob-cmd add-account "${AZUREACCOUNTNAME}" "${AZUREACCOUNTKEY}"
-fi
-
-if [[ $CONTAINERROLE =~ .*:(all|cron):.* ]]; then
-    ${DA_ROOT}/webapp/run-cron.sh cron_daily
 fi
 
 if [[ $CONTAINERROLE =~ .*:(all|web):.* ]]; then
@@ -70,6 +69,10 @@ if [[ $CONTAINERROLE =~ .*:(all|web):.* ]]; then
     fi
 fi
 
+if [[ $CONTAINERROLE =~ .*:(all|cron):.* ]]; then
+    ${DA_ROOT}/webapp/run-cron.sh cron_daily
+fi
+
 MONTHDAY=$(date +%m-%d)
 BACKUPDIR=${DA_ROOT}/backup/$MONTHDAY
 rm -rf $BACKUPDIR
@@ -97,7 +100,7 @@ if [[ $CONTAINERROLE =~ .*:(all|sql):.* ]]; then
     rm -rf "$PGBACKUPDIR"
 fi
 if [ "${AZUREENABLE:-false}" == "false" ]; then
-   rm -rf `find ${DA_ROOT}/backup -maxdepth 1 -path '*[0-9][0-9]-[0-9][0-9]' -a -type 'd' -a -mtime +14 -print`
+   rm -rf `find ${DA_ROOT}/backup -maxdepth 1 -path '*[0-9][0-9]-[0-9][0-9]' -a -type 'd' -a -mtime +${DABACKUPDAYS} -print`
 fi
 if [ "${S3ENABLE:-false}" == "true" ]; then
     if [ "${EC2:-false}" == "true" ]; then
@@ -116,7 +119,7 @@ if [ "${AZUREENABLE:-false}" == "true" ]; then
     for the_file in $( find ${DA_ROOT}/backup/ -type f | cut -c 31- ); do
 	blob-cmd -f cp "${DA_ROOT}/backup/$the_file" 'blob://'${AZUREACCOUNTNAME}'/'${AZURECONTAINER}'/backup/'${LOCAL_HOSTNAME}'/'${the_file}
     done
-    for the_dir in $( find ${DA_ROOT}/backup -maxdepth 1 -path '*[0-9][0-9]-[0-9][0-9]' -a -type 'd' -a -mtime +14 -print | cut -c 31- ); do
+    for the_dir in $( find ${DA_ROOT}/backup -maxdepth 1 -path '*[0-9][0-9]-[0-9][0-9]' -a -type 'd' -a -mtime +${DABACKUPDAYS} -print | cut -c 31- ); do
 	for the_file in $( find "${DA_ROOT}/backup/${the_dir}" -type f | cut -c 31- ); do
             blob-cmd -f rm 'blob://'${AZUREACCOUNTNAME}'/'${AZURECONTAINER}'/backup/'${LOCAL_HOSTNAME}'/'$( $the_file )
 	done

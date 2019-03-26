@@ -1,11 +1,6 @@
 metadata:
   title: User device
   documentation: "https://docassemble.org/docs/functions.html#device"
-  example start: 2
-  example end: 2
----
-modules:
-  - docassemble.base.util
 ---
 question: |
   % if device().is_mobile:
@@ -18,6 +13,12 @@ question: |
   You are a bot.
   % else:
   Your device is: ${ device() }.
+  % endif
+subquestion: |
+  % if device().is_touch_capable:
+  You are using a touchscreen device.
+  % else:
+  You are not using a touchscreen device.
   % endif
 mandatory: True
 

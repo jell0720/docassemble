@@ -1,11 +1,8 @@
 metadata:
   title: DAList
   documentation: "https://docassemble.org/docs/objects.html"
-  example start: 2
-  example end: 6
----
-modules:
-  - docassemble.base.util
+  example start: 1
+  example end: 5
 ---
 objects:
   - recipient: DAList
@@ -15,11 +12,12 @@ objects:
 ---
 mandatory: True
 code: |
+  recipient.clear()
   recipient.append(trustee)
   recipient.append(beneficiary)
   recipient.append(grantor)
-  recipient.append(Individual())
-  recipient.append(Individual())
+  recipient.appendObject(Individual)
+  recipient.appendObject(Individual)
   recipient.gathered = True
 ---
 mandatory: True

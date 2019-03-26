@@ -3,11 +3,13 @@ import subprocess
 from PIL import Image, ImageEnhance
 from docassemble.base.functions import get_config, get_language, ReturnValue
 from docassemble.base.core import DAFile, DAFileList
-from pyPdf import PdfFileReader
+from PyPDF2 import PdfFileReader
 from docassemble.base.logger import logmessage
 import pycountry
 import sys
 import os
+from six import string_types, text_type, PY2
+from io import open
 
 def ocr_finalize(*pargs, **kwargs):
     #sys.stderr.write("ocr_finalize started")
@@ -31,7 +33,7 @@ def ocr_finalize(*pargs, **kwargs):
 
 def get_available_languages():
     try:
-        output = subprocess.check_output(['tesseract', '--list-langs'], stderr=subprocess.STDOUT)
+        output = subprocess.check_output(['tesseract', '--list-langs'], stderr=subprocess.STDOUT).decode()
     except subprocess.CalledProcessError as err:
         raise Exception("get_available_languages: failed to list available languages: " + str(err))
     else:
@@ -87,7 +89,7 @@ def ocr_page_tasks(image_file, language=None, psm=6, x=None, y=None, W=None, H=N
                 raise Exception("document with extension " + doc.extension + " is not a readable image file")
             if doc.extension == 'pdf':
                 #doc.page_path(1, 'page')
-                for i in xrange(PdfFileReader(open(doc.path(), 'rb')).getNumPages()):
+                for i in range(PdfFileReader(open(doc.path(), 'rb')).getNumPages()):
                     todo.append(dict(doc=doc, page=i+1, lang=lang, ocr_resolution=ocr_resolution, psm=psm, x=x, y=y, W=W, H=H, pdf_to_ppm=pdf_to_ppm, user_code=user_code))
             else:
                 todo.append(dict(doc=doc, page=None, lang=lang, ocr_resolution=ocr_resolution, psm=psm, x=x, y=y, W=W, H=H, pdf_to_ppm=pdf_to_ppm, user_code=user_code))
@@ -158,10 +160,11 @@ def ocr_page(doc=None, lang=None, pdf_to_ppm='pdf_to_ppm', ocr_resolution=300, p
     file_to_read = tempfile.TemporaryFile()
     final_image.save(file_to_read, "PNG")
     file_to_read.seek(0)
+    params = ['tesseract', 'stdin', 'stdout', '-l', str(lang), '--psm', str(psm)]
+    sys.stderr.write("ocr_page: piping to command " + " ".join(params) + "\n")
     try:
-        text = subprocess.check_output(['tesseract', 'stdin', 'stdout', '-l', str(lang), '--psm', str(psm)], stdin=file_to_read)
+        text = subprocess.check_output(params, stdin=file_to_read).decode()
     except subprocess.CalledProcessError as err:
-        raise Exception("ocr_page: failed to list available languages: " + str(err) + " " + str(err.output))
+        raise Exception("ocr_page: failed to run tesseract with command " + " ".join(params) + ": " + str(err) + " " + str(err.output.decode()))
     sys.stderr.write("ocr_page finished with page " + str(page) + "\n")
-    return dict(page=page, text=text.decode('utf8'))
-
+    return dict(page=page, text=text)
